@@ -360,8 +360,8 @@ const SUGERENCIAS = ['Ácido fólico','Vitaminas prenatales','Vitamina D','Vitam
 function hojaMed(m){
   const n = !m; m = m || {para:'Ella', inicio: iso(hoy()), activo:true};
   abrir(`<h3>${n ? 'Agregar medicamento' : 'Editar medicamento'}</h3>
-    <label>Nombre</label><input id="kNom" list="sugMeds" autocomplete="off" value="${esc(m.nombre)}" placeholder="Elige de la lista o escríbelo">
-    <datalist id="sugMeds">${SUGERENCIAS.map(s => `<option value="${s}">`).join('')}</datalist>
+    <label>Nombre</label><input id="kNom" autocomplete="off" value="${esc(m.nombre)}" placeholder="Toca una sugerencia o escríbelo">
+    <div class="chips" id="kSug" style="flex-wrap:wrap;margin-top:8px"></div>
     <label>Dosis</label><input id="kDos" value="${esc(m.dosis)}" placeholder="Ej.: 1 tableta de 5 mg">
     <label>Para</label><select id="kPara">${['Ella','Él'].map(p => `<option ${m.para===p?'selected':''}>${p}</option>`).join('')}</select>
     <label>Horarios (separados por coma)</label><input id="kHor" value="${esc(m.horarios)}" placeholder="Ej.: 8:00 a.m., 8:00 p.m.">
@@ -370,6 +370,16 @@ function hojaMed(m){
     <label>Indicaciones del doctor</label><textarea id="kInd" placeholder="Con comida, en ayunas, días del ciclo…">${esc(m.indicaciones)}</textarea>
     ${n ? '' : `<label class="check"><input type="checkbox" id="kAct" ${m.activo?'checked':''}> Lo está tomando actualmente</label>`}
     <button class="btn mt" id="kOk">Guardar</button>${n ? '' : '<button class="del" id="kDel">Eliminar medicamento</button>'}`);
+  // sugerencias como botones: se filtran mientras se escribe
+  const sin = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  const pintarSug = () => {
+    const q = sin($('kNom').value.trim());
+    const L = SUGERENCIAS.filter(s => !q || sin(s).includes(q)).filter(s => sin(s) !== q);
+    $('kSug').innerHTML = L.map(s => `<button type="button" class="chip">${s}</button>`).join('');
+  };
+  $('kSug').onclick = e => { const b = e.target.closest('.chip'); if (b){ $('kNom').value = b.textContent; pintarSug(); } };
+  $('kNom').oninput = pintarSug;
+  if (n) pintarSug();
   $('kOk').onclick = () => {
     if (!$('kNom').value.trim()) return toast('Falta el nombre');
     const d = {nombre:$('kNom').value.trim(), dosis:$('kDos').value || null, para:$('kPara').value, horarios:$('kHor').value || null,
