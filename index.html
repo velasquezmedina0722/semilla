@@ -352,10 +352,16 @@ function renderMeds(){
   $('listaMeds').innerHTML = (S.meds || []).length ? S.meds.map(it).join('') : '<div class="empty">Aún no hay medicamentos. Los agregan después de la cita, con lo que indique el doctor.</div>';
 }
 
+// Solo para escribir más rápido; se puede poner cualquier otro nombre a mano.
+const SUGERENCIAS = ['Ácido fólico','Vitaminas prenatales','Vitamina D','Vitamina E','Vitamina B12','Omega 3','Hierro',
+  'Coenzima Q10','Zinc','Inositol','Progesterona','Letrozol','Clomifeno','Metformina','Estradiol','Gonadotropinas (inyección)',
+  'hCG (inyección)','Aspirina en dosis baja','Antibiótico','Analgésico'];
+
 function hojaMed(m){
   const n = !m; m = m || {para:'Ella', inicio: iso(hoy()), activo:true};
   abrir(`<h3>${n ? 'Agregar medicamento' : 'Editar medicamento'}</h3>
-    <label>Nombre</label><input id="kNom" value="${esc(m.nombre)}" placeholder="Ej.: ácido fólico">
+    <label>Nombre</label><input id="kNom" list="sugMeds" autocomplete="off" value="${esc(m.nombre)}" placeholder="Elige de la lista o escríbelo">
+    <datalist id="sugMeds">${SUGERENCIAS.map(s => `<option value="${s}">`).join('')}</datalist>
     <label>Dosis</label><input id="kDos" value="${esc(m.dosis)}" placeholder="Ej.: 1 tableta de 5 mg">
     <label>Para</label><select id="kPara">${['Ella','Él'].map(p => `<option ${m.para===p?'selected':''}>${p}</option>`).join('')}</select>
     <label>Horarios (separados por coma)</label><input id="kHor" value="${esc(m.horarios)}" placeholder="Ej.: 8:00 a.m., 8:00 p.m.">
