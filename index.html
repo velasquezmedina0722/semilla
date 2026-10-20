@@ -1,0 +1,638 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Semilla</title>
+<meta name="theme-color" content="#6a58a6">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Semilla">
+<style>
+:root{--ink:#2e2a3d;--muted:#6b6679;--lav:#7a68b3;--lav-d:#5a4a99;--lav-soft:#efebf8;--sage:#5f8a6a;--sage-soft:#e3efe6;--rose:#d9667a;--rose-soft:#fbe4e8;--warm:#c9824a;--warm-soft:#fbf0e5;--bg:#fbf8f4;--card:#fff;--line:#e8e2da}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bg)}
+body{font-family:"Segoe UI",system-ui,-apple-system,Roboto,sans-serif;color:var(--ink);font-size:16px;min-height:100vh;padding-bottom:calc(84px + env(safe-area-inset-bottom))}
+button,input,select,textarea{font:inherit;color:inherit}
+.hidden{display:none!important}
+header{padding:calc(18px + env(safe-area-inset-top)) 18px 6px;display:flex;align-items:center;gap:12px}
+.logo{width:42px;height:42px;border-radius:13px;background:linear-gradient(135deg,#8d7cc4,#6a58a6);display:flex;align-items:center;justify-content:center;font-size:22px;flex:none}
+header h1{font-size:21px;font-weight:800;flex:1}
+.ghost{background:none;border:none;color:var(--muted);font-size:14px;padding:8px;cursor:pointer}
+main{padding:8px 16px 16px;max-width:560px;margin:0 auto}
+h2{font-size:18px;font-weight:800;margin:22px 0 10px}
+.card{background:var(--card);border:1.5px solid var(--line);border-radius:20px;padding:18px}
+.hero{background:linear-gradient(135deg,#7a68b3,#5a4a99);color:#fff;border:none;text-align:center;padding:24px 18px}
+.hero .big{font-size:56px;font-weight:800;line-height:1}
+.hero .lbl{font-size:14px;opacity:.85;letter-spacing:1px;text-transform:uppercase}
+.hero .next{margin-top:14px;font-size:15px;opacity:.95}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.stat{background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:12px 14px}
+.stat small{display:block;color:var(--muted);font-size:12.5px}
+.stat b{font-size:17px}
+.alerts{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+.alert{border-radius:16px;padding:13px 15px;display:flex;gap:12px;align-items:flex-start;font-size:15px;line-height:1.4}
+.alert .i{font-size:22px;line-height:1.1}
+.alert.warm{background:var(--warm-soft);border-left:5px solid var(--warm)}
+.alert.sage{background:var(--sage-soft);border-left:5px solid var(--sage)}
+.alert.lav{background:var(--lav-soft);border-left:5px solid var(--lav)}
+.alert.rose{background:var(--rose-soft);border-left:5px solid var(--rose)}
+.btn{display:block;width:100%;border:none;border-radius:14px;padding:14px;font-weight:700;font-size:16px;cursor:pointer;background:var(--lav);color:#fff}
+.btn.sec{background:var(--lav-soft);color:var(--lav-d)}
+.btn.rose{background:var(--rose)}
+.btn.small{display:inline-block;width:auto;padding:8px 14px;font-size:14px;border-radius:11px}
+.row{display:flex;gap:10px}
+.row>*{flex:1}
+.mt{margin-top:12px}
+.list{display:flex;flex-direction:column;gap:8px}
+.item{background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:13px 15px;display:flex;gap:12px;align-items:flex-start;cursor:pointer}
+.item .ico{font-size:22px;line-height:1.2}
+.item .txt{flex:1;min-width:0}
+.item b{display:block;font-size:15.5px}
+.item small{color:var(--muted);font-size:13.5px;display:block;margin-top:2px;white-space:pre-wrap}
+.item .res{color:var(--sage);font-size:14px;margin-top:6px;white-space:pre-wrap}
+.doc{background:var(--card);border:1.5px solid var(--line);border-radius:20px;padding:16px;margin-bottom:14px}
+.doc .top{display:flex;gap:12px;align-items:center;cursor:pointer}
+.doc .av{width:46px;height:46px;border-radius:50%;background:var(--lav-soft);display:flex;align-items:center;justify-content:center;font-size:24px;flex:none}
+.doc b{display:block;font-size:16.5px}
+.doc small{display:block;color:var(--muted);font-size:13.5px;line-height:1.35;margin-top:2px}
+.doc .acts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px}
+.doc .acts a{text-decoration:none;color:var(--lav-d);background:var(--lav-soft);border-radius:12px;padding:9px 4px;text-align:center;font-size:12.5px;font-weight:700}
+.doc .acts a span{display:block;font-size:20px;margin-bottom:2px}
+.doc .acts a.wa{background:#e2f5e8;color:#1f7a44}
+.empty{color:var(--muted);text-align:center;padding:22px 10px;font-size:15px}
+.chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
+.chip{border:1.5px solid var(--line);background:var(--card);border-radius:20px;padding:6px 13px;font-size:14px;white-space:nowrap;cursor:pointer}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+/* calendario */
+.calhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.calhead b{font-size:17px}
+.calhead button{background:var(--card);border:1.5px solid var(--line);border-radius:12px;width:40px;height:40px;font-size:18px;cursor:pointer}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center}
+.cal .dow{font-size:12px;color:var(--muted);font-weight:700;padding:4px 0}
+.cal .d{aspect-ratio:1;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:15px;position:relative;background:var(--card)}
+.cal .d.out{background:transparent;color:#c9c3cf}
+.cal .d.regla{background:var(--rose);color:#fff;font-weight:700}
+.cal .d.prev{background:var(--rose-soft);color:var(--rose);border:1.5px dashed var(--rose)}
+.cal .d.fertil{background:var(--sage-soft);color:#3f6b4b}
+.cal .d.ovu{background:var(--sage);color:#fff;font-weight:700}
+.cal .d.hoy{outline:2.5px solid var(--ink);outline-offset:-2.5px}
+.cal .d .dot{position:absolute;bottom:4px;width:6px;height:6px;border-radius:50%;background:var(--warm)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:12px;font-size:13px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:13px;height:13px;border-radius:4px;display:inline-block}
+.note{font-size:12.5px;color:var(--muted);margin-top:10px;line-height:1.4}
+/* nav */
+nav{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1.5px solid var(--line);display:flex;padding:6px 6px calc(6px + env(safe-area-inset-bottom));z-index:5}
+nav button{flex:1;background:none;border:none;padding:6px 2px;font-size:11.5px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer}
+nav button span{font-size:22px;filter:grayscale(1);opacity:.6}
+nav button.on{color:var(--lav-d);font-weight:700}
+nav button.on span{filter:none;opacity:1}
+/* hoja / modal */
+.sheet{position:fixed;inset:0;background:rgba(30,25,45,.45);display:flex;align-items:flex-end;justify-content:center;z-index:10}
+.sheet .box{background:var(--bg);width:100%;max-width:560px;border-radius:24px 24px 0 0;padding:20px 18px calc(20px + env(safe-area-inset-bottom));max-height:92vh;overflow:auto}
+.sheet h3{font-size:19px;margin-bottom:14px}
+label{display:block;font-size:13.5px;color:var(--muted);font-weight:600;margin:12px 0 5px}
+input,select,textarea{width:100%;border:1.5px solid var(--line);border-radius:12px;padding:12px;background:#fff;font-size:16px}
+textarea{min-height:80px;resize:vertical}
+.check{display:flex;align-items:center;gap:10px;margin-top:14px;font-size:15px}
+.check input{width:22px;height:22px}
+.del{color:var(--rose);background:none;border:none;font-weight:700;margin-top:14px;cursor:pointer;width:100%;padding:10px}
+/* login */
+#login{max-width:420px;margin:0 auto;padding:calc(50px + env(safe-area-inset-top)) 22px 30px;text-align:center}
+#login .logo{width:84px;height:84px;font-size:44px;border-radius:26px;margin:0 auto 16px}
+#login h1{font-size:30px}
+#login p.sub{color:var(--muted);margin:6px 0 24px}
+#login form{text-align:left}
+.msg{margin-top:14px;font-size:14.5px;padding:11px 13px;border-radius:12px;background:var(--lav-soft);color:var(--lav-d);text-align:left}
+.msg.err{background:var(--rose-soft);color:#a33b4d}
+.toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:20px;font-size:14px;z-index:20}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<section id="login" class="hidden">
+  <div class="logo">👶🏽</div>
+  <h1>Semilla</h1>
+  <p class="sub">Nuestro camino, juntos</p>
+  <form id="fLogin">
+    <label>Correo</label>
+    <input type="email" id="lEmail" required autocomplete="email">
+    <label>Contraseña</label>
+    <input type="password" id="lPass" required minlength="6" autocomplete="current-password">
+    <button class="btn mt" id="lBtn" type="submit">Entrar</button>
+    <button class="btn sec mt" id="lToggle" type="button">Crear cuenta</button>
+  </form>
+  <div id="lMsg" class="msg hidden"></div>
+</section>
+
+<!-- APP -->
+<div id="app" class="hidden">
+  <header>
+    <div class="logo">👶🏽</div>
+    <h1 id="hTitle">Semilla</h1>
+    <button class="ghost" id="bSalir">Salir</button>
+  </header>
+  <main>
+    <div id="noAuth" class="msg err hidden">Tu correo todavía no está autorizado. Hay que agregarlo en la tabla <b>acceso</b> de Supabase.</div>
+
+    <!-- INICIO -->
+    <section id="v-inicio">
+      <div class="card hero" id="hero"></div>
+      <div class="stats" id="stats"></div>
+      <div class="alerts" id="alerts"></div>
+      <div class="row mt">
+        <button class="btn rose" id="bRegla">🩸 Llegó la regla</button>
+      </div>
+      <div class="row mt">
+        <button class="btn sec" id="bFin">Terminó la regla</button>
+        <button class="btn sec" id="bEvento">+ Registrar</button>
+      </div>
+      <div id="hoyMedsBox" class="hidden">
+        <h2>Medicinas de hoy</h2>
+        <div class="list" id="hoyMeds"></div>
+      </div>
+      <h2>Próximo en el tratamiento</h2>
+      <div class="list" id="proximos"></div>
+    </section>
+
+    <!-- CALENDARIO -->
+    <section id="v-calendario" class="hidden">
+      <div class="calhead">
+        <button id="mPrev">‹</button><b id="mLbl"></b><button id="mNext">›</button>
+      </div>
+      <div class="cal" id="cal"></div>
+      <div class="legend">
+        <span><i style="background:var(--rose)"></i>Regla</span>
+        <span><i style="background:var(--rose-soft);border:1.5px dashed var(--rose)"></i>Regla prevista</span>
+        <span><i style="background:var(--sage-soft)"></i>Días fértiles</span>
+        <span><i style="background:var(--sage)"></i>Ovulación</span>
+        <span><i style="background:var(--warm);border-radius:50%"></i>Evento</span>
+      </div>
+      <p class="note">Los días fértiles y la ovulación son un cálculo aproximado según el promedio de sus ciclos. El médico puede confirmarlos con ecografía.</p>
+      <h2>Historial de reglas</h2>
+      <div class="list" id="historial"></div>
+    </section>
+
+    <!-- TRATAMIENTO -->
+    <section id="v-tratamiento" class="hidden">
+      <div id="medicos"></div>
+      <div class="chips" id="filtros"></div>
+      <button class="btn mt" id="bEvento2">+ Registrar en el tratamiento</button>
+      <div class="list mt" id="eventos"></div>
+    </section>
+
+    <!-- MEDICINAS -->
+    <section id="v-medicinas" class="hidden">
+      <div class="calhead">
+        <button id="dPrev">‹</button><b id="dLbl"></b><button id="dNext">›</button>
+      </div>
+      <div class="list" id="tomasDia"></div>
+      <h2>Últimos 7 días</h2>
+      <div class="card" style="padding:12px;overflow-x:auto" id="semana"></div>
+      <h2>Medicamentos</h2>
+      <button class="btn" id="bMed">+ Agregar medicamento</button>
+      <div class="list mt" id="listaMeds"></div>
+    </section>
+
+    <!-- PREGUNTAS -->
+    <section id="v-preguntas" class="hidden">
+      <form id="fPreg" class="row">
+        <input id="pTexto" placeholder="Nueva pregunta para el médico…" required>
+        <button class="btn small" style="flex:none">Agregar</button>
+      </form>
+      <h2>Pendientes</h2>
+      <div class="list" id="pPend"></div>
+      <h2>Ya respondidas</h2>
+      <div class="list" id="pResp"></div>
+    </section>
+  </main>
+
+  <nav>
+    <button data-v="inicio" class="on"><span>🏠</span>Inicio</button>
+    <button data-v="calendario"><span>📅</span>Calendario</button>
+    <button data-v="tratamiento"><span>🩺</span>Tratamiento</button>
+    <button data-v="medicinas"><span>💊</span>Medicinas</button>
+    <button data-v="preguntas"><span>❓</span>Preguntas</button>
+  </nav>
+</div>
+
+<div id="sheet" class="sheet hidden"><div class="box" id="sheetBox"></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
+<script>
+const SUPABASE_URL = 'https://bamuhysfbvascgblbkxa.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_7oeso1GTkP5FDsSmXB5EMw_f9U-6wAh';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const CICLO_DEFECTO = 23;   // promedio de 21–25 días
+const DURACION_DEFECTO = 5; // días de regla si no se marca el fin
+
+const TIPOS = {
+  dilatacion:   {n:'Dilatación cervical', i:'🌀'},
+  inseminacion: {n:'Inseminación', i:'💜'},
+  citologia:    {n:'Citología', i:'🔬'},
+  cita:         {n:'Cita médica', i:'🩺'},
+  examen:       {n:'Examen / análisis', i:'🧪'},
+  ecografia:    {n:'Ecografía', i:'🖥️'},
+  prueba:       {n:'Prueba de embarazo', i:'🤞'},
+  otro:         {n:'Otro', i:'📝'}
+};
+
+let S = {user:null, ciclos:[], eventos:[], preguntas:[], vista:'inicio', mes:null, filtro:'todos'};
+
+// ---------- fechas ----------
+const pad = n => String(n).padStart(2,'0');
+const iso = d => d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const parse = s => { const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d, 12); };
+const hoy = () => { const d = new Date(); d.setHours(12,0,0,0); return d; };
+const addD = (d,n) => { const x = new Date(d); x.setDate(x.getDate()+n); return x; };
+const diff = (a,b) => Math.round((a - b) / 864e5);
+const fmt = (d, o) => (typeof d === 'string' ? parse(d) : d).toLocaleDateString('es-PA', o || {weekday:'short', day:'numeric', month:'short'});
+const esc = s => (s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const $ = id => document.getElementById(id);
+
+function toast(t){ const e = document.createElement('div'); e.className='toast'; e.textContent=t; document.body.appendChild(e); setTimeout(()=>e.remove(), 2200); }
+
+// ---------- cálculo del ciclo ----------
+function calc(){
+  const c = [...S.ciclos].sort((a,b) => a.inicio < b.inicio ? 1 : -1);
+  if (!c.length) return null;
+  const largos = [];
+  for (let i = 0; i < c.length-1 && largos.length < 6; i++){
+    const L = diff(parse(c[i].inicio), parse(c[i+1].inicio));
+    if (L >= 15 && L <= 45) largos.push(L);
+  }
+  const prom = largos.length ? Math.round(largos.reduce((a,b)=>a+b,0)/largos.length) : CICLO_DEFECTO;
+  const ult = parse(c[0].inicio);
+  const dia = diff(hoy(), ult) + 1;
+  const prox = addD(ult, prom);
+  const ovu = addD(prox, -14);
+  return {c, prom, largos, ult, dia, prox, ovu, fIni: addD(ovu,-5), fFin: addD(ovu,1), enCurso: !c[0].fin && dia <= 10};
+}
+
+// ---------- datos ----------
+async function cargar(){
+  const [a, c, e, p, m] = await Promise.all([
+    sb.from('acceso').select('email'),
+    sb.from('ciclos').select('*').order('inicio', {ascending:false}),
+    sb.from('eventos').select('*').order('fecha', {ascending:false}),
+    sb.from('preguntas').select('*').order('creado_en', {ascending:true}),
+    sb.from('contactos').select('*').order('id'),
+    sb.from('medicamentos').select('*').order('id'),
+    sb.from('tomas').select('*').gte('fecha', iso(addD(hoy(), -30)))
+  ]).then(r => { [S.medicos, S.meds, S.tomas] = r.slice(4).map(x => x.data || []); return r; });
+  if (c.error || e.error || p.error) { toast('No se pudo cargar. Revisa la conexión.'); console.error(c.error||e.error||p.error); }
+  $('noAuth').classList.toggle('hidden', !!(a.data && a.data.length));
+  S.ciclos = c.data || []; S.eventos = e.data || []; S.preguntas = p.data || [];
+  render();
+}
+
+// ---------- vistas ----------
+function render(){
+  renderInicio(); renderCal(); renderTrat(); renderPreg(); renderMeds();
+}
+
+// ---------- medicinas ----------
+const horas = m => (m.horarios || '').split(',').map(s => s.trim()).filter(Boolean);
+const nDosis = m => Math.max(1, horas(m).length);
+const tocaEl = (m, f) => m.activo && m.inicio <= f && (!m.fin || m.fin >= f);
+const tomada = (m, f, n) => (S.tomas || []).some(t => t.medicamento_id === m.id && t.fecha === f && t.dosis_n === n);
+
+function filasDia(f){
+  const L = (S.meds || []).filter(m => tocaEl(m, f));
+  if (!L.length) return '<div class="empty">No hay medicamentos para este día.</div>';
+  return L.map(m => {
+    const hs = horas(m);
+    return Array.from({length:nDosis(m)}, (_, i) => {
+      const ok = tomada(m, f, i+1);
+      return `<div class="item" onclick="marcar(${m.id},'${f}',${i+1})" style="${ok ? 'background:var(--sage-soft);border-color:#c7dccb' : ''}">
+        <span class="ico">${ok ? '✅' : '⬜'}</span><div class="txt"><b>${esc(m.nombre)}${m.dosis ? ' · '+esc(m.dosis) : ''}</b>
+        <small>${esc(m.para)}${hs[i] ? ' · '+esc(hs[i]) : nDosis(m) > 1 ? ' · dosis '+(i+1) : ''}${ok ? ' · tomada' : ''}</small></div></div>`;
+    }).join('');
+  }).join('');
+}
+
+window.marcar = async (id, f, n) => {
+  const m = S.meds.find(x => x.id === id);
+  const q = tomada(m, f, n)
+    ? sb.from('tomas').delete().match({medicamento_id:id, fecha:f, dosis_n:n})
+    : sb.from('tomas').insert({medicamento_id:id, fecha:f, dosis_n:n});
+  const {error} = await q;
+  if (error) return toast('Error: ' + error.message);
+  cargar();
+};
+
+function renderMeds(){
+  if (!S.diaMed) S.diaMed = iso(hoy());
+  const t = iso(hoy()), f = S.diaMed;
+  const hayHoy = (S.meds || []).some(m => tocaEl(m, t));
+  $('hoyMedsBox').classList.toggle('hidden', !hayHoy);
+  if (hayHoy) $('hoyMeds').innerHTML = filasDia(t);
+  $('dLbl').textContent = f === t ? 'Hoy' : f === iso(addD(hoy(),-1)) ? 'Ayer' : fmt(f);
+  $('dNext').disabled = f >= t; $('dNext').style.opacity = f >= t ? .3 : 1;
+  $('tomasDia').innerHTML = filasDia(f);
+  // últimos 7 días
+  const dias = Array.from({length:7}, (_, i) => iso(addD(hoy(), i-6)));
+  const act = (S.meds || []).filter(m => dias.some(d => tocaEl(m, d)));
+  $('semana').innerHTML = act.length ? `<table style="width:100%;border-collapse:collapse;font-size:13.5px;text-align:center">
+    <tr><td></td>${dias.map(d => `<td style="color:var(--muted);font-weight:700;padding:4px 2px">${fmt(d,{weekday:'narrow'})}<br>${parse(d).getDate()}</td>`).join('')}</tr>
+    ${act.map(m => `<tr><td style="text-align:left;padding:6px 6px 6px 0;font-weight:600;max-width:110px">${esc(m.nombre)}</td>${dias.map(d => {
+      if (!tocaEl(m, d)) return '<td style="color:#ccc">·</td>';
+      const k = Array.from({length:nDosis(m)}, (_, i) => tomada(m, d, i+1)).filter(Boolean).length;
+      return `<td style="font-size:17px">${k === nDosis(m) ? '✅' : k ? '🟡' : d === t ? '⬜' : '❌'}</td>`;
+    }).join('')}</tr>`).join('')}</table>` : '<div class="empty" style="padding:8px">Cuando agreguen medicamentos, aquí verán qué días se tomaron.</div>';
+  const it = m => `<div class="item" onclick="editMed(${m.id})"><span class="ico">💊</span><div class="txt"><b>${esc(m.nombre)}${m.dosis ? ' · '+esc(m.dosis) : ''}</b>
+    <small>${esc(m.para)} · ${horas(m).length ? esc(horas(m).join(', ')) : '1 vez al día'} · desde ${fmt(m.inicio,{day:'numeric',month:'short'})}${m.fin ? ' hasta '+fmt(m.fin,{day:'numeric',month:'short'}) : ''}${m.activo ? '' : ' · suspendido'}${m.indicaciones ? '\n'+esc(m.indicaciones) : ''}</small></div></div>`;
+  $('listaMeds').innerHTML = (S.meds || []).length ? S.meds.map(it).join('') : '<div class="empty">Aún no hay medicamentos. Los agregan después de la cita, con lo que indique el doctor.</div>';
+}
+
+function hojaMed(m){
+  const n = !m; m = m || {para:'Ella', inicio: iso(hoy()), activo:true};
+  abrir(`<h3>${n ? 'Agregar medicamento' : 'Editar medicamento'}</h3>
+    <label>Nombre</label><input id="kNom" value="${esc(m.nombre)}" placeholder="Ej.: ácido fólico">
+    <label>Dosis</label><input id="kDos" value="${esc(m.dosis)}" placeholder="Ej.: 1 tableta de 5 mg">
+    <label>Para</label><select id="kPara">${['Ella','Él'].map(p => `<option ${m.para===p?'selected':''}>${p}</option>`).join('')}</select>
+    <label>Horarios (separados por coma)</label><input id="kHor" value="${esc(m.horarios)}" placeholder="Ej.: 8:00 a.m., 8:00 p.m.">
+    <div class="row"><div><label>Desde</label><input type="date" id="kIni" value="${m.inicio}"></div>
+    <div><label>Hasta (opcional)</label><input type="date" id="kFin" value="${m.fin || ''}"></div></div>
+    <label>Indicaciones del doctor</label><textarea id="kInd" placeholder="Con comida, en ayunas, días del ciclo…">${esc(m.indicaciones)}</textarea>
+    ${n ? '' : `<label class="check"><input type="checkbox" id="kAct" ${m.activo?'checked':''}> Lo está tomando actualmente</label>`}
+    <button class="btn mt" id="kOk">Guardar</button>${n ? '' : '<button class="del" id="kDel">Eliminar medicamento</button>'}`);
+  $('kOk').onclick = () => {
+    if (!$('kNom').value.trim()) return toast('Falta el nombre');
+    const d = {nombre:$('kNom').value.trim(), dosis:$('kDos').value || null, para:$('kPara').value, horarios:$('kHor').value || null,
+      inicio:$('kIni').value, fin:$('kFin').value || null, indicaciones:$('kInd').value || null, activo: n ? true : $('kAct').checked};
+    guardar(n ? sb.from('medicamentos').insert(d) : sb.from('medicamentos').update(d).eq('id', m.id), 'Guardado');
+  };
+  if (!n) $('kDel').onclick = () => confirm('¿Eliminar este medicamento y su historial de tomas?') && guardar(sb.from('medicamentos').delete().eq('id', m.id), 'Eliminado');
+}
+window.editMed = id => hojaMed(S.meds.find(x => x.id === id));
+
+function renderInicio(){
+  const k = calc();
+  const hero = $('hero'), stats = $('stats'), al = $('alerts');
+  if (!k){
+    hero.innerHTML = '<div class="lbl">Bienvenidos</div><div class="next" style="font-size:17px">Registren el primer día de la última regla para empezar.</div>';
+    stats.innerHTML = ''; al.innerHTML = '';
+  } else {
+    const falta = diff(k.prox, hoy());
+    hero.innerHTML = `<div class="lbl">Día del ciclo</div><div class="big">${k.dia}</div>
+      <div class="next">${falta > 0 ? `Próxima regla en <b>${falta} día${falta>1?'s':''}</b> · ${fmt(k.prox)}` : falta === 0 ? 'La regla se espera <b>hoy</b>' : `La regla viene <b>${-falta} día${falta<-1?'s':''} retrasada</b>`}</div>`;
+    stats.innerHTML = `
+      <div class="stat"><small>Días fértiles (aprox.)</small><b>${fmt(k.fIni,{day:'numeric',month:'short'})} – ${fmt(k.fFin,{day:'numeric',month:'short'})}</b></div>
+      <div class="stat"><small>Ciclo promedio</small><b>${k.prom} días</b>${k.largos.length ? '' : '<small>valor inicial</small>'}</div>`;
+    al.innerHTML = alertas(k).map(a => `<div class="alert ${a[0]}"><span class="i">${a[1]}</span><div>${a[2]}</div></div>`).join('');
+  }
+  $('bFin').classList.toggle('hidden', !(k && k.enCurso));
+  const prox = S.eventos.filter(e => e.fecha >= iso(hoy())).sort((a,b) => a.fecha < b.fecha ? -1 : 1).slice(0,4);
+  $('proximos').innerHTML = prox.length ? prox.map(itemEvento).join('') : '<div class="empty">No hay nada programado. Usen “+ Registrar” para anotar citas o procedimientos.</div>';
+}
+
+function alertas(k){
+  const A = [], t = hoy(), d = k.dia;
+  const falta = diff(k.prox, t);
+  if (d === 1) A.push(['warm','📅','<b>Mañana es el día 2 de la regla.</b> Es el día indicado para la citología: confirmen la cita.']);
+  if (d === 2) A.push(['warm','🔬','<b>Hoy es el día 2.</b> El cuello está más relajado: buen día para la citología.']);
+  if (falta >= 1 && falta <= 3) A.push(['rose','🩸',`La regla se espera en ${falta} día${falta>1?'s':''}. Recuerden: el día 2 es el de la citología.`]);
+  if (falta < 0) A.push(['lav','🤞',`La regla viene ${-falta} día${falta<-1?'s':''} retrasada. Si pasan más días, conviene una prueba de embarazo.`]);
+  const aFertil = diff(k.fIni, t);
+  if (aFertil >= 1 && aFertil <= 5) A.push(['sage','👶🏽',`Los días fértiles empiezan en ${aFertil} día${aFertil>1?'s':''}. Momento de coordinar la dilatación o la inseminación con el médico.`]);
+  if (t >= k.fIni && t <= k.fFin) A.push(['sage','💚', diff(k.ovu,t) === 0 ? '<b>Hoy es el día estimado de ovulación.</b>' : '<b>Están en los días fértiles</b> (estimado).']);
+  const cita = S.eventos.find(e => e.tipo === 'cita' && diff(parse(e.fecha), t) >= 0 && diff(parse(e.fecha), t) <= 7);
+  const pend = S.preguntas.filter(p => !p.respondida).length;
+  if (cita) A.push(['lav','🩺',`Cita ${diff(parse(cita.fecha),t) === 0 ? '<b>hoy</b>' : 'el <b>'+fmt(cita.fecha)+'</b>'}${pend ? ` · tienen <b>${pend} pregunta${pend>1?'s':''}</b> pendiente${pend>1?'s':''} para el médico` : ''}.`]);
+  return A;
+}
+
+function renderCal(){
+  if (!S.mes){ const t = hoy(); S.mes = new Date(t.getFullYear(), t.getMonth(), 1, 12); }
+  const m = S.mes, k = calc(), tISO = iso(hoy());
+  const mes = m.toLocaleDateString('es-PA', {month:'long', year:'numeric'});
+  $('mLbl').textContent = mes.charAt(0).toUpperCase() + mes.slice(1);
+  const regla = new Set(), prev = new Set(), fert = new Set(), ovu = new Set(), ev = new Set(S.eventos.map(e => e.fecha));
+  S.ciclos.forEach(c => {
+    const ini = parse(c.inicio), fin = c.fin ? parse(c.fin) : addD(ini, DURACION_DEFECTO-1);
+    for (let d = ini; d <= fin; d = addD(d,1)) regla.add(iso(d));
+  });
+  if (k){
+    // fértiles del ciclo actual y proyección de los próximos 3
+    for (let n = 0; n < 4; n++){
+      const p = addD(k.prox, k.prom*n), o = addD(p, -14);
+      for (let d = addD(o,-5); d <= addD(o,1); d = addD(d,1)) fert.add(iso(d));
+      ovu.add(iso(o));
+      if (n === 0 && p <= hoy()) continue;
+      for (let i = 0; i < DURACION_DEFECTO; i++) prev.add(iso(addD(p,i)));
+    }
+  }
+  let h = ['L','M','M','J','V','S','D'].map(x => `<div class="dow">${x}</div>`).join('');
+  const start = addD(m, -((m.getDay()+6)%7));
+  for (let i = 0; i < 42; i++){
+    const d = addD(start, i), s = iso(d);
+    if (i >= 35 && d.getMonth() !== m.getMonth()) break;
+    let cls = 'd';
+    if (d.getMonth() !== m.getMonth()) cls += ' out';
+    else if (regla.has(s)) cls += ' regla';
+    else if (ovu.has(s)) cls += ' ovu';
+    else if (prev.has(s) && s > tISO) cls += ' prev';
+    else if (fert.has(s)) cls += ' fertil';
+    if (s === tISO) cls += ' hoy';
+    h += `<div class="${cls}">${d.getDate()}${ev.has(s) && d.getMonth() === m.getMonth() ? '<i class="dot"></i>' : ''}</div>`;
+  }
+  $('cal').innerHTML = h;
+  const sorted = [...S.ciclos].sort((a,b) => a.inicio < b.inicio ? 1 : -1);
+  $('historial').innerHTML = sorted.length ? sorted.map((c,i) => {
+    const sig = sorted[i-1];
+    const largo = sig ? diff(parse(sig.inicio), parse(c.inicio)) : null;
+    const dur = c.fin ? diff(parse(c.fin), parse(c.inicio)) + 1 : null;
+    return `<div class="item" onclick="editCiclo(${c.id})"><span class="ico">🩸</span><div class="txt"><b>${fmt(c.inicio,{day:'numeric',month:'long',year:'numeric'})}</b>
+      <small>${dur ? dur+' días de regla' : 'Fin sin marcar'}${largo ? ' · ciclo de '+largo+' días' : ' · ciclo actual'}${c.notas ? '\n'+esc(c.notas) : ''}</small></div></div>`;
+  }).join('') : '<div class="empty">Aún no hay reglas registradas.</div>';
+}
+
+function itemEvento(e){
+  const t = TIPOS[e.tipo] || TIPOS.otro;
+  return `<div class="item" onclick="editEvento(${e.id})"><span class="ico">${t.i}</span><div class="txt"><b>${t.n}</b>
+    <small>${fmt(e.fecha,{weekday:'short',day:'numeric',month:'short',year:'numeric'})}${e.detalle ? ' · '+esc(e.detalle) : ''}</small>
+    ${e.resultado ? `<div class="res">✓ ${esc(e.resultado)}</div>` : ''}</div></div>`;
+}
+
+// número de Panamá → formato internacional (+507)
+const intl = n => { const d = (n||'').replace(/\D/g,''); return d.startsWith('507') ? d : '507' + d; };
+
+function renderMedicos(){
+  $('medicos').innerHTML = (S.medicos || []).map(m => `
+    <div class="doc">
+      <div class="top" onclick="editMedico(${m.id})"><div class="av">🩺</div><div>
+        <b>${esc(m.nombre)}</b><small>${esc(m.especialidad)}${m.lugar ? '<br>'+esc(m.lugar) : ''}</small></div></div>
+      <div class="acts">
+        ${m.telefono ? `<a href="tel:+${intl(m.telefono)}"><span>📞</span>Consultorio</a>` : ''}
+        ${m.celular ? `<a class="wa" href="https://wa.me/${intl(m.celular)}" target="_blank" rel="noopener"><span>💬</span>WhatsApp</a>` : ''}
+        ${m.mapa ? `<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(m.mapa)}" target="_blank" rel="noopener"><span>📍</span>Mapa</a>` : ''}
+        ${m.email ? `<a href="mailto:${esc(m.email)}"><span>✉️</span>Correo</a>` : ''}
+      </div>
+    </div>`).join('');
+}
+
+window.editMedico = id => {
+  const m = S.medicos.find(x => x.id === id);
+  const f = (k, l, t) => `<label>${l}</label><input id="m_${k}" type="${t||'text'}" value="${esc(m[k])}">`;
+  abrir(`<h3>Datos del médico</h3>${f('nombre','Nombre')}${f('especialidad','Especialidad')}${f('lugar','Dirección')}
+    ${f('telefono','Teléfono del consultorio','tel')}${f('celular','Celular / WhatsApp','tel')}${f('email','Correo','email')}${f('mapa','Búsqueda en el mapa')}
+    <button class="btn mt" id="mOk">Guardar</button>`);
+  $('mOk').onclick = () => {
+    const d = {}; ['nombre','especialidad','lugar','telefono','celular','email','mapa'].forEach(k => d[k] = $('m_'+k).value || null);
+    guardar(sb.from('contactos').update(d).eq('id', id), 'Guardado');
+  };
+};
+
+function renderTrat(){
+  renderMedicos();
+  const usados = ['todos', ...Object.keys(TIPOS).filter(k => S.eventos.some(e => e.tipo === k))];
+  $('filtros').innerHTML = usados.map(k => `<button class="chip ${S.filtro===k?'on':''}" data-f="${k}">${k==='todos' ? 'Todos' : TIPOS[k].i+' '+TIPOS[k].n}${k!=='todos' ? ' · '+S.eventos.filter(e=>e.tipo===k).length : ''}</button>`).join('');
+  const L = S.eventos.filter(e => S.filtro === 'todos' || e.tipo === S.filtro);
+  $('eventos').innerHTML = L.length ? L.map(itemEvento).join('') : '<div class="empty">Aquí quedarán las dilataciones, inseminaciones, exámenes y citas.</div>';
+}
+
+function renderPreg(){
+  const it = p => `<div class="item" onclick="editPreg(${p.id})"><span class="ico">${p.respondida ? '✅' : '❔'}</span><div class="txt"><b style="font-weight:600">${esc(p.texto)}</b>${p.respuesta ? `<div class="res">${esc(p.respuesta)}</div>` : ''}</div></div>`;
+  const pe = S.preguntas.filter(p => !p.respondida), re = S.preguntas.filter(p => p.respondida);
+  $('pPend').innerHTML = pe.length ? pe.map(it).join('') : '<div class="empty">No hay preguntas pendientes.</div>';
+  $('pResp').innerHTML = re.length ? re.map(it).join('') : '<div class="empty">Cuando el médico responda, anoten aquí lo que dijo.</div>';
+}
+
+// ---------- hojas (formularios) ----------
+function abrir(html){ $('sheetBox').innerHTML = html; $('sheet').classList.remove('hidden'); }
+function cerrar(){ $('sheet').classList.add('hidden'); }
+$('sheet').addEventListener('click', e => { if (e.target.id === 'sheet') cerrar(); });
+
+async function guardar(q, ok){
+  const {error} = await q;
+  if (error){ toast('Error: ' + error.message); return; }
+  cerrar(); toast(ok); cargar();
+}
+
+function hojaRegla(){
+  abrir(`<h3>🩸 Llegó la regla</h3>
+    <label>Primer día</label><input type="date" id="rIni" value="${iso(hoy())}">
+    <label>Notas (opcional)</label><textarea id="rNot" placeholder="Dolor, cantidad, algo que comentar al médico…"></textarea>
+    <button class="btn rose mt" id="rOk">Guardar</button>`);
+  $('rOk').onclick = () => guardar(sb.from('ciclos').insert({inicio:$('rIni').value, notas:$('rNot').value || null}), 'Regla registrada');
+}
+
+function hojaFin(){
+  const c = calc().c[0];
+  abrir(`<h3>Terminó la regla</h3>
+    <label>Último día</label><input type="date" id="fFin" value="${iso(hoy())}" min="${c.inicio}">
+    <button class="btn mt" id="fOk">Guardar</button>`);
+  $('fOk').onclick = () => guardar(sb.from('ciclos').update({fin:$('fFin').value}).eq('id', c.id), 'Listo');
+}
+
+window.editCiclo = id => {
+  const c = S.ciclos.find(x => x.id === id);
+  abrir(`<h3>Editar regla</h3>
+    <div class="row"><div><label>Inicio</label><input type="date" id="eIni" value="${c.inicio}"></div>
+    <div><label>Fin</label><input type="date" id="eFin" value="${c.fin || ''}"></div></div>
+    <label>Notas</label><textarea id="eNot">${esc(c.notas)}</textarea>
+    <button class="btn mt" id="eOk">Guardar</button><button class="del" id="eDel">Eliminar este registro</button>`);
+  $('eOk').onclick = () => guardar(sb.from('ciclos').update({inicio:$('eIni').value, fin:$('eFin').value || null, notas:$('eNot').value || null}).eq('id', id), 'Guardado');
+  $('eDel').onclick = () => confirm('¿Eliminar este registro de regla?') && guardar(sb.from('ciclos').delete().eq('id', id), 'Eliminado');
+};
+
+function hojaEvento(e){
+  const n = !e; e = e || {fecha: iso(hoy()), tipo: 'cita'};
+  abrir(`<h3>${n ? 'Registrar' : 'Editar'}</h3>
+    <label>Tipo</label><select id="vTipo">${Object.entries(TIPOS).map(([k,t]) => `<option value="${k}" ${e.tipo===k?'selected':''}>${t.i} ${t.n}</option>`).join('')}</select>
+    <label>Fecha</label><input type="date" id="vFec" value="${e.fecha}">
+    <label>Detalle (opcional)</label><input id="vDet" value="${esc(e.detalle)}" placeholder="Clínica, médico, hora…">
+    <label>Resultado / qué dijo el médico</label><textarea id="vRes" placeholder="Se puede completar después">${esc(e.resultado)}</textarea>
+    <button class="btn mt" id="vOk">Guardar</button>${n ? '' : '<button class="del" id="vDel">Eliminar</button>'}`);
+  $('vOk').onclick = () => {
+    const d = {tipo:$('vTipo').value, fecha:$('vFec').value, detalle:$('vDet').value || null, resultado:$('vRes').value || null};
+    guardar(n ? sb.from('eventos').insert(d) : sb.from('eventos').update(d).eq('id', e.id), 'Guardado');
+  };
+  if (!n) $('vDel').onclick = () => confirm('¿Eliminar este registro?') && guardar(sb.from('eventos').delete().eq('id', e.id), 'Eliminado');
+}
+window.editEvento = id => hojaEvento(S.eventos.find(x => x.id === id));
+
+window.editPreg = id => {
+  const p = S.preguntas.find(x => x.id === id);
+  abrir(`<h3>Pregunta para el médico</h3>
+    <label>Pregunta</label><textarea id="qTxt">${esc(p.texto)}</textarea>
+    <label>Respuesta del médico</label><textarea id="qRes" placeholder="Lo que respondió…">${esc(p.respuesta)}</textarea>
+    <label class="check"><input type="checkbox" id="qOk" ${p.respondida?'checked':''}> Ya fue respondida</label>
+    <button class="btn mt" id="qGu">Guardar</button><button class="del" id="qDel">Eliminar pregunta</button>`);
+  $('qRes').oninput = () => { if ($('qRes').value.trim()) $('qOk').checked = true; };
+  $('qGu').onclick = () => guardar(sb.from('preguntas').update({texto:$('qTxt').value, respuesta:$('qRes').value || null, respondida:$('qOk').checked}).eq('id', id), 'Guardado');
+  $('qDel').onclick = () => confirm('¿Eliminar esta pregunta?') && guardar(sb.from('preguntas').delete().eq('id', id), 'Eliminada');
+};
+
+// ---------- eventos de la interfaz ----------
+$('bRegla').onclick = hojaRegla;
+$('bFin').onclick = hojaFin;
+$('bEvento').onclick = () => hojaEvento();
+$('bEvento2').onclick = () => hojaEvento();
+$('bMed').onclick = () => hojaMed();
+$('dPrev').onclick = () => { S.diaMed = iso(addD(parse(S.diaMed), -1)); renderMeds(); };
+$('dNext').onclick = () => { if (S.diaMed < iso(hoy())) { S.diaMed = iso(addD(parse(S.diaMed), 1)); renderMeds(); } };
+$('mPrev').onclick = () => { S.mes = new Date(S.mes.getFullYear(), S.mes.getMonth()-1, 1, 12); renderCal(); };
+$('mNext').onclick = () => { S.mes = new Date(S.mes.getFullYear(), S.mes.getMonth()+1, 1, 12); renderCal(); };
+$('filtros').onclick = e => { const f = e.target.closest('[data-f]'); if (f){ S.filtro = f.dataset.f; renderTrat(); } };
+$('fPreg').onsubmit = e => { e.preventDefault(); const t = $('pTexto').value.trim(); if (!t) return; $('pTexto').value = ''; guardar(sb.from('preguntas').insert({texto:t}), 'Pregunta agregada'); };
+document.querySelectorAll('nav button').forEach(b => b.onclick = () => {
+  S.vista = b.dataset.v;
+  document.querySelectorAll('nav button').forEach(x => x.classList.toggle('on', x === b));
+  ['inicio','calendario','tratamiento','medicinas','preguntas'].forEach(v => $('v-'+v).classList.toggle('hidden', v !== S.vista));
+  $('hTitle').textContent = {inicio:'Semilla', calendario:'Calendario', tratamiento:'Tratamiento', medicinas:'Medicinas', preguntas:'Preguntas'}[S.vista];
+  window.scrollTo(0,0);
+});
+document.addEventListener('visibilitychange', () => { if (!document.hidden && S.user) cargar(); });
+
+// ---------- sesión ----------
+let modoRegistro = false;
+$('lToggle').onclick = () => {
+  modoRegistro = !modoRegistro;
+  $('lBtn').textContent = modoRegistro ? 'Crear cuenta' : 'Entrar';
+  $('lToggle').textContent = modoRegistro ? 'Ya tengo cuenta' : 'Crear cuenta';
+  $('lPass').autocomplete = modoRegistro ? 'new-password' : 'current-password';
+};
+function msg(t, err){ const m = $('lMsg'); m.textContent = t; m.className = 'msg' + (err ? ' err' : ''); }
+$('fLogin').onsubmit = async e => {
+  e.preventDefault();
+  const email = $('lEmail').value.trim(), password = $('lPass').value;
+  $('lBtn').disabled = true;
+  if (modoRegistro){
+    const {data, error} = await sb.auth.signUp({email, password, options:{emailRedirectTo: location.origin + location.pathname}});
+    if (error) msg(traducir(error.message), true);
+    else if (!data.session) msg('Cuenta creada. Revisa tu correo y toca el enlace de confirmación; luego vuelve y entra.');
+  } else {
+    const {error} = await sb.auth.signInWithPassword({email, password});
+    if (error) msg(traducir(error.message), true);
+  }
+  $('lBtn').disabled = false;
+};
+function traducir(m){
+  if (/Invalid login/i.test(m)) return 'Correo o contraseña incorrectos.';
+  if (/Email not confirmed/i.test(m)) return 'Falta confirmar el correo: revisa tu bandeja (y spam).';
+  if (/already registered/i.test(m)) return 'Ese correo ya tiene cuenta. Usa “Ya tengo cuenta”.';
+  if (/at least 6/i.test(m)) return 'La contraseña debe tener al menos 6 caracteres.';
+  return m;
+}
+$('bSalir').onclick = async () => { if (confirm('¿Cerrar sesión?')) await sb.auth.signOut(); };
+
+function mostrar(session){
+  S.user = session ? session.user : null;
+  $('login').classList.toggle('hidden', !!S.user);
+  $('app').classList.toggle('hidden', !S.user);
+  if (S.user) cargar();
+}
+sb.auth.getSession().then(({data}) => mostrar(data.session));
+sb.auth.onAuthStateChange((ev, session) => { if (ev === 'SIGNED_IN' || ev === 'SIGNED_OUT') mostrar(session); });
+
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>
