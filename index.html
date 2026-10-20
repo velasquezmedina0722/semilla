@@ -53,6 +53,20 @@ h2{font-size:18px;font-weight:800;margin:22px 0 10px}
 .item b{display:block;font-size:15.5px}
 .item small{color:var(--muted);font-size:13.5px;display:block;margin-top:2px;white-space:pre-wrap}
 .item .res{color:var(--sage);font-size:14px;margin-top:6px;white-space:pre-wrap}
+.verso{background:linear-gradient(135deg,#fff7ec,#fbefe0);border:1.5px solid #f0dcc2;border-radius:20px;padding:16px 18px;margin-bottom:12px;color:#5e4a36}
+.verso p{font-size:15.5px;line-height:1.45;font-style:italic}
+.verso small{display:block;margin-top:8px;font-weight:700;font-size:13px;color:var(--warm)}
+.seg{display:flex;background:var(--lav-soft);border-radius:14px;padding:4px;margin-bottom:14px}
+.seg button{flex:1;border:none;background:none;padding:10px;border-radius:11px;font-weight:700;color:var(--lav-d);cursor:pointer}
+.seg button.on{background:#fff;box-shadow:0 1px 4px rgba(60,40,90,.15)}
+.opts{display:flex;flex-wrap:wrap;gap:8px}
+.opts .chip.on{background:var(--lav);border-color:var(--lav);color:#fff}
+.cal .d .mk{position:absolute;top:1px;right:3px;font-size:9px;line-height:1}
+.cal .d{cursor:pointer}
+.files{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.files a{display:flex;align-items:center;gap:8px;background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:9px 12px;color:var(--lav-d);text-decoration:none;font-size:14.5px;font-weight:600;word-break:break-all}
+.bar{height:8px;border-radius:4px;background:var(--lav-soft);overflow:hidden;margin-top:4px}
+.bar i{display:block;height:100%;background:var(--lav)}
 .doc{background:var(--card);border:1.5px solid var(--line);border-radius:20px;padding:16px;margin-bottom:14px}
 .doc .top{display:flex;gap:12px;align-items:center;cursor:pointer}
 .doc .av{width:46px;height:46px;border-radius:50%;background:var(--lav-soft);display:flex;align-items:center;justify-content:center;font-size:24px;flex:none}
@@ -142,8 +156,10 @@ textarea{min-height:80px;resize:vertical}
 
     <!-- INICIO -->
     <section id="v-inicio">
+      <div class="verso" id="verso"></div>
       <div class="card hero" id="hero"></div>
       <div class="stats" id="stats"></div>
+      <div class="item mt" id="hoyDiario" onclick="hojaDiario()"></div>
       <div class="alerts" id="alerts"></div>
       <div class="alert lav mt hidden" id="avisos"></div>
       <div class="row mt">
@@ -173,18 +189,32 @@ textarea{min-height:80px;resize:vertical}
         <span><i style="background:var(--sage-soft)"></i>Días fértiles</span>
         <span><i style="background:var(--sage)"></i>Ovulación</span>
         <span><i style="background:var(--warm);border-radius:50%"></i>Evento</span>
+        <span>❤️ Relaciones</span>
+        <span>🧪 Ovulación positiva</span>
       </div>
-      <p class="note">Los días fértiles y la ovulación son un cálculo aproximado según el promedio de sus ciclos. El médico puede confirmarlos con ecografía.</p>
+      <p class="note">Toquen un día para ver o completar su registro. Los días fértiles son un cálculo según el promedio de sus ciclos; si registran una prueba de ovulación positiva, se ajustan a ese resultado. El médico puede confirmarlos con ecografía.</p>
       <h2>Historial de reglas</h2>
       <div class="list" id="historial"></div>
     </section>
 
     <!-- TRATAMIENTO -->
     <section id="v-tratamiento" class="hidden">
-      <div id="medicos"></div>
-      <div class="chips" id="filtros"></div>
-      <button class="btn mt" id="bEvento2">+ Registrar en el tratamiento</button>
-      <div class="list mt" id="eventos"></div>
+      <div class="seg" id="segTrat">
+        <button data-t="bitacora" class="on">🩺 Bitácora</button>
+        <button data-t="gastos">💵 Gastos</button>
+      </div>
+      <div id="t-bitacora">
+        <div id="medicos"></div>
+        <div class="chips" id="filtros"></div>
+        <button class="btn mt" id="bEvento2">+ Registrar en el tratamiento</button>
+        <div class="list mt" id="eventos"></div>
+      </div>
+      <div id="t-gastos" class="hidden">
+        <div class="stats" id="gTot" style="margin-top:0"></div>
+        <div class="card mt" id="gCat" style="padding:14px"></div>
+        <button class="btn mt" id="bGasto">+ Agregar gasto</button>
+        <div class="list mt" id="gLista"></div>
+      </div>
     </section>
 
     <!-- MEDICINAS -->
@@ -272,8 +302,10 @@ function calc(){
   const ult = parse(c[0].inicio);
   const dia = diff(hoy(), ult) + 1;
   const prox = addD(ult, prom);
-  const ovu = addD(prox, -14);
-  return {c, prom, largos, ult, dia, prox, ovu, fIni: addD(ovu,-5), fFin: addD(ovu,1), enCurso: !c[0].fin && dia <= 10};
+  // si hay una prueba de ovulación positiva en este ciclo, la ovulación es ~1 día después
+  const lh = (S.diario || []).filter(d => (d.ovulacion || '').toLowerCase() === 'positiva' &&d.fecha >= c[0].inicio).map(d => d.fecha).sort()[0];
+  const ovu = lh ? addD(parse(lh), 1) : addD(prox, -14);
+  return {c, prom, largos, ult, dia, prox, ovu, lh, fIni: addD(ovu,-5), fFin: addD(ovu,1), enCurso: !c[0].fin && dia <= 10};
 }
 
 // ---------- datos ----------
@@ -285,8 +317,11 @@ async function cargar(){
     sb.from('preguntas').select('*').order('creado_en', {ascending:true}),
     sb.from('contactos').select('*').order('id'),
     sb.from('medicamentos').select('*').order('id'),
-    sb.from('tomas').select('*').gte('fecha', iso(addD(hoy(), -30)))
-  ]).then(r => { [S.medicos, S.meds, S.tomas] = r.slice(4).map(x => x.data || []); return r; });
+    sb.from('tomas').select('*').gte('fecha', iso(addD(hoy(), -30))),
+    sb.from('diario').select('*').gte('fecha', iso(addD(hoy(), -400))),
+    sb.from('archivos').select('*').order('id'),
+    sb.from('gastos').select('*').order('fecha', {ascending:false})
+  ]).then(r => { [S.medicos, S.meds, S.tomas, S.diario, S.archivos, S.gastos] = r.slice(4).map(x => x.data || []); return r; });
   if (c.error || e.error || p.error) { toast('No se pudo cargar. Revisa la conexión.'); console.error(c.error||e.error||p.error); }
   $('noAuth').classList.toggle('hidden', !!(a.data && a.data.length));
   S.ciclos = c.data || []; S.eventos = e.data || []; S.preguntas = p.data || [];
@@ -295,8 +330,177 @@ async function cargar(){
 
 // ---------- vistas ----------
 function render(){
-  renderInicio(); renderCal(); renderTrat(); renderPreg(); renderMeds();
+  renderInicio(); renderCal(); renderTrat(); renderPreg(); renderMeds(); renderGastos();
 }
+
+// ---------- versículo del día ----------
+const VERSOS = [
+  ['Herencia de Jehová son los hijos; cosa de estima el fruto del vientre.', 'Salmo 127:3'],
+  ['Por este niño oraba, y Jehová me dio lo que le pedí.', '1 Samuel 1:27'],
+  ['Él hace habitar en familia a la estéril, que se goza en ser madre de hijos. Aleluya.', 'Salmo 113:9'],
+  ['Porque yo sé los pensamientos que tengo acerca de vosotros, dice Jehová, pensamientos de paz, y no de mal, para daros el fin que esperáis.', 'Jeremías 29:11'],
+  ['Pero los que esperan a Jehová tendrán nuevas fuerzas; levantarán alas como las águilas; correrán, y no se cansarán; caminarán, y no se fatigarán.', 'Isaías 40:31'],
+  ['Y el Dios de esperanza os llene de todo gozo y paz en el creer, para que abundéis en esperanza por el poder del Espíritu Santo.', 'Romanos 15:13'],
+  ['Por nada estéis afanosos, sino sean conocidas vuestras peticiones delante de Dios en toda oración y ruego, con acción de gracias.', 'Filipenses 4:6'],
+  ['Y la paz de Dios, que sobrepasa todo entendimiento, guardará vuestros corazones y vuestros pensamientos en Cristo Jesús.', 'Filipenses 4:7'],
+  ['Fíate de Jehová de todo tu corazón, y no te apoyes en tu propia prudencia.', 'Proverbios 3:5'],
+  ['Deléitate asimismo en Jehová, y él te concederá las peticiones de tu corazón.', 'Salmo 37:4'],
+  ['Encomienda a Jehová tu camino, y confía en él; y él hará.', 'Salmo 37:5'],
+  ['Por la misericordia de Jehová no hemos sido consumidos, porque nunca decayeron sus misericordias. Nuevas son cada mañana; grande es tu fidelidad.', 'Lamentaciones 3:22-23'],
+  ['Y sabemos que a los que aman a Dios, todas las cosas les ayudan a bien.', 'Romanos 8:28'],
+  ['Aguarda a Jehová; esfuérzate, y aliéntese tu corazón; sí, espera a Jehová.', 'Salmo 27:14'],
+  ['No temas, porque yo estoy contigo; no desmayes, porque yo soy tu Dios que te esfuerzo; siempre te ayudaré.', 'Isaías 41:10'],
+  ['Mira que te mando que te esfuerces y seas valiente; no temas ni desmayes, porque Jehová tu Dios estará contigo en dondequiera que vayas.', 'Josué 1:9'],
+  ['Venid a mí todos los que estáis trabajados y cargados, y yo os haré descansar.', 'Mateo 11:28'],
+  ['Bástate mi gracia; porque mi poder se perfecciona en la debilidad.', '2 Corintios 12:9'],
+  ['Por la fe también la misma Sara, siendo estéril, recibió fuerza para concebir; porque creyó que era fiel quien lo había prometido.', 'Hebreos 11:11'],
+  ['Porque nada hay imposible para Dios.', 'Lucas 1:37'],
+  ['Dios es nuestro amparo y fortaleza, nuestro pronto auxilio en las tribulaciones.', 'Salmo 46:1'],
+  ['Cercano está Jehová a los quebrantados de corazón; y salva a los contritos de espíritu.', 'Salmo 34:18'],
+  ['Por la noche durará el lloro, y a la mañana vendrá la alegría.', 'Salmo 30:5'],
+  ['Aunque la visión tardará aún por un tiempo, mas se apresura hacia el fin, y no mentirá; aunque tardare, espéralo, porque sin duda vendrá.', 'Habacuc 2:3'],
+  ['Tú guardarás en completa paz a aquel cuyo pensamiento en ti persevera; porque en ti ha confiado.', 'Isaías 26:3'],
+  ['Jehová te bendiga, y te guarde; Jehová haga resplandecer su rostro sobre ti, y tenga de ti misericordia.', 'Números 6:24-25'],
+  ['Alzaré mis ojos a los montes; ¿de dónde vendrá mi socorro? Mi socorro viene de Jehová, que hizo los cielos y la tierra.', 'Salmo 121:1-2'],
+  ['Todo tiene su tiempo, y todo lo que se quiere debajo del cielo tiene su hora.', 'Eclesiastés 3:1'],
+  ['Todo lo hizo hermoso en su tiempo.', 'Eclesiastés 3:11'],
+  ['Gozosos en la esperanza; sufridos en la tribulación; constantes en la oración.', 'Romanos 12:12'],
+  ['Todo lo puedo en Cristo que me fortalece.', 'Filipenses 4:13'],
+  ['Mantengamos firme, sin fluctuar, la profesión de nuestra esperanza, porque fiel es el que prometió.', 'Hebreos 10:23'],
+  ['Echa sobre Jehová tu carga, y él te sustentará.', 'Salmo 55:22'],
+  ['Echando toda vuestra ansiedad sobre él, porque él tiene cuidado de vosotros.', '1 Pedro 5:7'],
+  ['Encomienda a Jehová tus obras, y tus pensamientos serán afirmados.', 'Proverbios 16:3'],
+  ['Pedid, y se os dará; buscad, y hallaréis; llamad, y se os abrirá.', 'Mateo 7:7'],
+  ['La paz os dejo, mi paz os doy. No se turbe vuestro corazón, ni tenga miedo.', 'Juan 14:27'],
+  ['Jehová es mi pastor; nada me faltará.', 'Salmo 23:1'],
+  ['Jehová está en medio de ti, poderoso, él salvará; se gozará sobre ti con alegría, callará de amor, se regocijará sobre ti con cánticos.', 'Sofonías 3:17'],
+  ['He aquí que yo hago cosa nueva; pronto saldrá a luz; ¿no la conoceréis?', 'Isaías 43:19'],
+  ['Porque tú formaste mis entrañas; tú me hiciste en el vientre de mi madre. Te alabaré; porque formidables, maravillosas son tus obras.', 'Salmo 139:13-14'],
+  ['Antes que te formase en el vientre te conocí.', 'Jeremías 1:5'],
+  ['Y Jehová va delante de ti; él estará contigo, no te dejará, ni te desamparará; no temas ni te intimides.', 'Deuteronomio 31:8'],
+  ['Los que sembraron con lágrimas, con regocijo segarán.', 'Salmo 126:5'],
+  ['Visitó Jehová a Sara, como había dicho, e hizo Jehová con Sara como había hablado.', 'Génesis 21:1'],
+  ['Y oró Isaac a Jehová por su mujer, que era estéril; y lo aceptó Jehová, y concibió Rebeca su mujer.', 'Génesis 25:21'],
+  ['Y se acordó Dios de Raquel, y la oyó Dios, y le concedió hijos.', 'Génesis 30:22'],
+  ['Pacientemente esperé a Jehová, y se inclinó a mí, y oyó mi clamor.', 'Salmo 40:1'],
+  ['Y cordón de tres dobleces no se rompe pronto.', 'Eclesiastés 4:12'],
+  ['El amor todo lo sufre, todo lo cree, todo lo espera, todo lo soporta.', '1 Corintios 13:7'],
+  ['Clama a mí, y yo te responderé, y te enseñaré cosas grandes y ocultas que tú no conoces.', 'Jeremías 33:3'],
+  ['Bendito el varón que confía en Jehová, y cuya confianza es Jehová.', 'Jeremías 17:7'],
+  ['Estad quietos, y conoced que yo soy Dios.', 'Salmo 46:10'],
+  ['Y todo lo que pidiereis en oración, creyendo, lo recibiréis.', 'Mateo 21:22'],
+  ['Él da esfuerzo al cansado, y multiplica las fuerzas al que no tiene ningunas.', 'Isaías 40:29']
+];
+function versoDelDia(){
+  const t = hoy(), n = diff(t, new Date(t.getFullYear(), 0, 1, 12));
+  return VERSOS[(n + t.getFullYear()) % VERSOS.length];
+}
+
+// ---------- registro diario ----------
+const OPC = {
+  sangrado: ['Manchado','Ligero','Medio','Abundante'],
+  flujo: ['Seco','Pegajoso','Cremoso','Clara de huevo'],
+  dolor: ['Leve','Moderado','Fuerte'],
+  animo: ['😊','🙂','😐','😔','😢'],
+  ovulacion: ['Negativa','Positiva']
+};
+const diaDe = f => (S.diario || []).find(d => d.fecha === f);
+function resumenDia(d){
+  if (!d) return '';
+  return [d.relaciones && '❤️ Relaciones', d.ovulacion && '🧪 Ovulación ' + d.ovulacion.toLowerCase(), d.sangrado && '🩸 ' + d.sangrado,
+    d.flujo && '💧 ' + d.flujo, d.dolor && '⚡ Dolor ' + d.dolor.toLowerCase(), d.temperatura && '🌡️ ' + d.temperatura + ' °C', d.animo]
+    .filter(Boolean).join(' · ');
+}
+window.hojaDiario = (f) => {
+  f = f || iso(hoy());
+  const d = Object.assign({relaciones:false}, diaDe(f) || {});
+  const grupo = (k, titulo) => `<label>${titulo}</label><div class="opts" data-k="${k}">${OPC[k].map(o =>
+    `<button type="button" class="chip ${d[k] === o ? 'on' : ''}">${o}</button>`).join('')}</div>`;
+  abrir(`<h3>📝 ${f === iso(hoy()) ? 'Registro de hoy' : fmt(f,{weekday:'long',day:'numeric',month:'long'})}</h3>
+    <label class="check" style="margin-top:4px"><input type="checkbox" id="dRel" ${d.relaciones ? 'checked' : ''}> ❤️ Tuvimos relaciones</label>
+    ${grupo('ovulacion','🧪 Prueba de ovulación')}
+    ${grupo('sangrado','🩸 Sangrado')}
+    ${grupo('flujo','💧 Flujo')}
+    ${grupo('dolor','⚡ Dolor')}
+    ${grupo('animo','Ánimo')}
+    <label>🌡️ Temperatura al despertar (opcional)</label><input type="number" step="0.01" min="34" max="42" id="dTem" inputmode="decimal" value="${d.temperatura ?? ''}" placeholder="Ej.: 36.45">
+    <label>Notas</label><textarea id="dNot" placeholder="Algo para recordar o comentar al médico">${esc(d.notas)}</textarea>
+    <button class="btn mt" id="dOk">Guardar</button>${diaDe(f) ? '<button class="del" id="dDel">Borrar el registro de este día</button>' : ''}`);
+  document.querySelectorAll('#sheetBox .opts').forEach(g => g.onclick = e => {
+    const b = e.target.closest('.chip'); if (!b) return;
+    const on = b.classList.contains('on');
+    g.querySelectorAll('.chip').forEach(x => x.classList.remove('on'));
+    if (!on) b.classList.add('on');
+    d[g.dataset.k] = on ? null : b.textContent;
+  });
+  $('dOk').onclick = () => guardar(sb.from('diario').upsert({fecha:f, relaciones:$('dRel').checked, sangrado:d.sangrado || null, flujo:d.flujo || null,
+    dolor:d.dolor || null, animo:d.animo || null, ovulacion:d.ovulacion || null, temperatura:$('dTem').value || null, notas:$('dNot').value || null,
+    actualizado_en:new Date().toISOString()}, {onConflict:'fecha'}), 'Guardado');
+  if ($('dDel')) $('dDel').onclick = () => confirm('¿Borrar el registro de este día?') && guardar(sb.from('diario').delete().eq('fecha', f), 'Borrado');
+};
+
+// ---------- archivos (exámenes y facturas) ----------
+const limpio = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\w.-]+/g, '_').slice(-80);
+async function subir(carpeta, file){
+  const ruta = `${carpeta}/${Date.now()}-${limpio(file.name)}`;
+  const {error} = await sb.storage.from('examenes').upload(ruta, file, {contentType: file.type || undefined});
+  if (error) throw error;
+  return ruta;
+}
+async function enlaces(rutas){
+  if (!rutas.length) return {};
+  const {data} = await sb.storage.from('examenes').createSignedUrls(rutas, 3600);
+  return Object.fromEntries((data || []).map(x => [x.path, x.signedUrl]));
+}
+const icoArchivo = n => /\.pdf$/i.test(n || '') ? '📄' : '🖼️';
+
+// ---------- gastos ----------
+const CATS = {consulta:'🩺 Consultas', medicinas:'💊 Medicinas', examenes:'🧪 Exámenes', procedimientos:'🏥 Procedimientos', otros:'📦 Otros'};
+const money = n => 'B/. ' + Number(n || 0).toLocaleString('es-PA', {minimumFractionDigits:2, maximumFractionDigits:2});
+function renderGastos(){
+  const G = S.gastos || [], t = iso(hoy());
+  const suma = L => L.reduce((a, g) => a + Number(g.monto), 0);
+  const mes = suma(G.filter(g => g.fecha.slice(0,7) === t.slice(0,7))), anio = suma(G.filter(g => g.fecha.slice(0,4) === t.slice(0,4))), tot = suma(G);
+  $('gTot').innerHTML = `<div class="stat"><small>Este mes</small><b>${money(mes)}</b></div><div class="stat"><small>Este año</small><b>${money(anio)}</b></div>`;
+  const porCat = Object.keys(CATS).map(k => [k, suma(G.filter(g => g.categoria === k))]).filter(x => x[1] > 0);
+  $('gCat').innerHTML = porCat.length ? `<div style="display:flex;justify-content:space-between;font-weight:800;margin-bottom:8px"><span>Total del tratamiento</span><span>${money(tot)}</span></div>` +
+    porCat.map(([k, v]) => `<div style="margin-top:8px;font-size:14px"><div style="display:flex;justify-content:space-between"><span>${CATS[k]}</span><b>${money(v)}</b></div>
+      <div class="bar"><i style="width:${Math.round(v / tot * 100)}%"></i></div></div>`).join('')
+    : '<div class="empty" style="padding:6px">Aquí verán cuánto llevan invertido, por tipo de gasto.</div>';
+  $('gLista').innerHTML = G.length ? G.map(g => `<div class="item" onclick="editGasto(${g.id})"><span class="ico">${(CATS[g.categoria] || CATS.otros).split(' ')[0]}</span>
+    <div class="txt"><b>${esc(g.concepto)}</b><small>${fmt(g.fecha,{day:'numeric',month:'short',year:'numeric'})}${g.pagado_por ? ' · pagó ' + esc(g.pagado_por) : ''}${g.factura ? ' · 📎 factura' : ''}</small></div>
+    <b style="white-space:nowrap">${money(g.monto)}</b></div>`).join('') : '<div class="empty">Aún no hay gastos registrados.</div>';
+}
+function hojaGasto(g){
+  const n = !g; g = g || {fecha: iso(hoy()), categoria: 'consulta'};
+  abrir(`<h3>${n ? 'Agregar gasto' : 'Editar gasto'}</h3>
+    <label>Concepto</label><input id="gCon" value="${esc(g.concepto)}" placeholder="Ej.: Consulta Dr. Ponce">
+    <div class="row"><div><label>Monto (B/.)</label><input id="gMon" type="number" step="0.01" min="0" inputmode="decimal" value="${g.monto ?? ''}"></div>
+    <div><label>Fecha</label><input id="gFec" type="date" value="${g.fecha}"></div></div>
+    <label>Tipo</label><select id="gCatSel">${Object.entries(CATS).map(([k, v]) => `<option value="${k}" ${g.categoria === k ? 'selected' : ''}>${v}</option>`).join('')}</select>
+    <label>Pagado por</label><select id="gPag">${['', 'Él', 'Ella', 'Ambos', 'Seguro'].map(p => `<option value="${p}" ${(g.pagado_por || '') === p ? 'selected' : ''}>${p || '—'}</option>`).join('')}</select>
+    <label>Factura (foto o PDF)</label><div class="files" id="gFac"></div><input type="file" id="gFile" accept="image/*,application/pdf" style="margin-top:8px">
+    <label>Notas</label><textarea id="gNot">${esc(g.notas)}</textarea>
+    <button class="btn mt" id="gOk">Guardar</button>${n ? '' : '<button class="del" id="gDel">Eliminar gasto</button>'}`);
+  if (g.factura) enlaces([g.factura]).then(u => { if ($('gFac')) $('gFac').innerHTML = `<a href="${u[g.factura]}" target="_blank" rel="noopener">${icoArchivo(g.factura)} Ver factura</a>`; });
+  $('gOk').onclick = async () => {
+    const monto = parseFloat($('gMon').value);
+    if (!$('gCon').value.trim() || !(monto >= 0)) return toast('Falta el concepto o el monto');
+    $('gOk').disabled = true; $('gOk').textContent = 'Guardando…';
+    try {
+      const file = $('gFile').files[0];
+      const d = {concepto:$('gCon').value.trim(), monto, fecha:$('gFec').value, categoria:$('gCatSel').value, pagado_por:$('gPag').value || null, notas:$('gNot').value || null};
+      if (file) d.factura = await subir('gastos', file);
+      await guardar(n ? sb.from('gastos').insert(d) : sb.from('gastos').update(d).eq('id', g.id), 'Guardado');
+    } catch (e) { toast('Error: ' + e.message); $('gOk').disabled = false; $('gOk').textContent = 'Guardar'; }
+  };
+  if (!n) $('gDel').onclick = async () => {
+    if (!confirm('¿Eliminar este gasto?')) return;
+    if (g.factura) await sb.storage.from('examenes').remove([g.factura]);
+    guardar(sb.from('gastos').delete().eq('id', g.id), 'Eliminado');
+  };
+}
+window.editGasto = id => hojaGasto(S.gastos.find(x => x.id === id));
 
 // ---------- medicinas ----------
 const horas = m => (m.horarios || '').split(',').map(s => s.trim()).filter(Boolean);
@@ -393,6 +597,11 @@ window.editMed = id => hojaMed(S.meds.find(x => x.id === id));
 function renderInicio(){
   const k = calc();
   const hero = $('hero'), stats = $('stats'), al = $('alerts');
+  const v = versoDelDia();
+  $('verso').innerHTML = `<p>“${v[0]}”</p><small>${v[1]}</small>`;
+  const rd = resumenDia(diaDe(iso(hoy())));
+  $('hoyDiario').innerHTML = `<span class="ico">📝</span><div class="txt"><b>${rd ? 'Registro de hoy' : 'Registrar el día de hoy'}</b>
+    <small>${rd || 'Relaciones, prueba de ovulación, flujo, dolor, ánimo…'}</small></div><span style="color:var(--lav);font-weight:800;font-size:20px">›</span>`;
   if (!k){
     hero.innerHTML = '<div class="lbl">Bienvenidos</div><div class="next" style="font-size:17px">Registren el primer día de la última regla para empezar.</div>';
     stats.innerHTML = ''; al.innerHTML = '';
@@ -401,7 +610,7 @@ function renderInicio(){
     hero.innerHTML = `<div class="lbl">Día del ciclo</div><div class="big">${k.dia}</div>
       <div class="next">${falta > 0 ? `Próxima regla en <b>${falta} día${falta>1?'s':''}</b> · ${fmt(k.prox)}` : falta === 0 ? 'La regla se espera <b>hoy</b>' : `La regla viene <b>${-falta} día${falta<-1?'s':''} retrasada</b>`}</div>`;
     stats.innerHTML = `
-      <div class="stat"><small>Días fértiles (aprox.)</small><b>${fmt(k.fIni,{day:'numeric',month:'short'})} – ${fmt(k.fFin,{day:'numeric',month:'short'})}</b></div>
+      <div class="stat"><small>${k.lh ? 'Días fértiles (según prueba)' : 'Días fértiles (aprox.)'}</small><b>${fmt(k.fIni,{day:'numeric',month:'short'})} – ${fmt(k.fFin,{day:'numeric',month:'short'})}</b></div>
       <div class="stat"><small>Ciclo promedio</small><b>${k.prom} días</b>${k.largos.length ? '' : '<small>valor inicial</small>'}</div>`;
     al.innerHTML = alertas(k).map(a => `<div class="alert ${a[0]}"><span class="i">${a[1]}</span><div>${a[2]}</div></div>`).join('');
   }
@@ -439,7 +648,7 @@ function renderCal(){
   if (k){
     // fértiles del ciclo actual y proyección de los próximos 3
     for (let n = 0; n < 4; n++){
-      const p = addD(k.prox, k.prom*n), o = addD(p, -14);
+      const p = addD(k.prox, k.prom*n), o = n === 0 ? k.ovu : addD(p, -14);
       for (let d = addD(o,-5); d <= addD(o,1); d = addD(d,1)) fert.add(iso(d));
       ovu.add(iso(o));
       if (n === 0 && p <= hoy()) continue;
@@ -458,7 +667,9 @@ function renderCal(){
     else if (prev.has(s) && s > tISO) cls += ' prev';
     else if (fert.has(s)) cls += ' fertil';
     if (s === tISO) cls += ' hoy';
-    h += `<div class="${cls}">${d.getDate()}${ev.has(s) && d.getMonth() === m.getMonth() ? '<i class="dot"></i>' : ''}</div>`;
+    const dd = d.getMonth() === m.getMonth() ? diaDe(s) : null;
+    const mk = dd ? (dd.relaciones ? '❤️' : '') + (dd.ovulacion === 'Positiva' ? '🧪' : '') : '';
+    h += `<div class="${cls}" data-f="${s}">${d.getDate()}${mk ? `<span class="mk">${mk}</span>` : ''}${ev.has(s) && d.getMonth() === m.getMonth() ? '<i class="dot"></i>' : ''}</div>`;
   }
   $('cal').innerHTML = h;
   const sorted = [...S.ciclos].sort((a,b) => a.inicio < b.inicio ? 1 : -1);
@@ -473,7 +684,8 @@ function renderCal(){
 
 function itemEvento(e){
   const t = TIPOS[e.tipo] || TIPOS.otro;
-  return `<div class="item" onclick="editEvento(${e.id})"><span class="ico">${t.i}</span><div class="txt"><b>${t.n}</b>
+  const nf = (S.archivos || []).filter(a => a.evento_id === e.id).length;
+  return `<div class="item" onclick="editEvento(${e.id})"><span class="ico">${t.i}</span><div class="txt"><b>${t.n}${nf ? ` <span style="font-weight:600;color:var(--lav-d);font-size:13px">📎 ${nf}</span>` : ''}</b>
     <small>${fmt(e.fecha,{weekday:'short',day:'numeric',month:'short',year:'numeric'})}${e.detalle ? ' · '+esc(e.detalle) : ''}</small>
     ${e.resultado ? `<div class="res">✓ ${esc(e.resultado)}</div>` : ''}</div></div>`;
 }
@@ -567,13 +779,47 @@ function hojaEvento(e){
     <label>Fecha</label><input type="date" id="vFec" value="${e.fecha}">
     <label>Detalle (opcional)</label><input id="vDet" value="${esc(e.detalle)}" placeholder="Clínica, médico, hora…">
     <label>Resultado / qué dijo el médico</label><textarea id="vRes" placeholder="Se puede completar después">${esc(e.resultado)}</textarea>
+    <label>📎 Resultados, recetas o ecografías (foto o PDF)</label>
+    <div class="files" id="vFiles"></div>
+    <input type="file" id="vFile" accept="image/*,application/pdf" multiple style="margin-top:8px">
     <button class="btn mt" id="vOk">Guardar</button>${n ? '' : '<button class="del" id="vDel">Eliminar</button>'}`);
-  $('vOk').onclick = () => {
+  const propios = (S.archivos || []).filter(a => a.evento_id === e.id);
+  if (propios.length) enlaces(propios.map(a => a.ruta)).then(u => {
+    if (!$('vFiles')) return;
+    $('vFiles').innerHTML = propios.map(a => `<div style="display:flex;gap:6px"><a style="flex:1" href="${u[a.ruta] || '#'}" target="_blank" rel="noopener">${icoArchivo(a.nombre)} ${esc(a.nombre)}</a>
+      <button type="button" class="chip" onclick="quitarArchivo(${a.id})" title="Quitar">✕</button></div>`).join('');
+  });
+  $('vOk').onclick = async () => {
     const d = {tipo:$('vTipo').value, fecha:$('vFec').value, detalle:$('vDet').value || null, resultado:$('vRes').value || null};
-    guardar(n ? sb.from('eventos').insert(d) : sb.from('eventos').update(d).eq('id', e.id), 'Guardado');
+    const files = [...$('vFile').files];
+    $('vOk').disabled = true; $('vOk').textContent = files.length ? 'Subiendo archivos…' : 'Guardando…';
+    try {
+      const q = n ? sb.from('eventos').insert(d).select('id').single() : sb.from('eventos').update(d).eq('id', e.id).select('id').single();
+      const {data, error} = await q;
+      if (error) throw error;
+      for (const f of files){
+        const ruta = await subir('eventos/' + data.id, f);
+        const r = await sb.from('archivos').insert({evento_id:data.id, ruta, nombre:f.name});
+        if (r.error) throw r.error;
+      }
+      cerrar(); toast('Guardado'); cargar();
+    } catch (err) { toast('Error: ' + err.message); $('vOk').disabled = false; $('vOk').textContent = 'Guardar'; }
   };
-  if (!n) $('vDel').onclick = () => confirm('¿Eliminar este registro?') && guardar(sb.from('eventos').delete().eq('id', e.id), 'Eliminado');
+  if (!n) $('vDel').onclick = async () => {
+    if (!confirm('¿Eliminar este registro y sus archivos?')) return;
+    if (propios.length) await sb.storage.from('examenes').remove(propios.map(a => a.ruta));
+    guardar(sb.from('eventos').delete().eq('id', e.id), 'Eliminado');
+  };
 }
+window.quitarArchivo = async id => {
+  const a = S.archivos.find(x => x.id === id);
+  if (!a || !confirm('¿Quitar "' + a.nombre + '"?')) return;
+  await sb.storage.from('examenes').remove([a.ruta]);
+  await sb.from('archivos').delete().eq('id', id);
+  S.archivos = S.archivos.filter(x => x.id !== id);
+  hojaEvento(S.eventos.find(x => x.id === a.evento_id));
+  renderTrat();
+};
 window.editEvento = id => hojaEvento(S.eventos.find(x => x.id === id));
 
 window.editPreg = id => {
@@ -594,6 +840,14 @@ $('bFin').onclick = hojaFin;
 $('bEvento').onclick = () => hojaEvento();
 $('bEvento2').onclick = () => hojaEvento();
 $('bMed').onclick = () => hojaMed();
+$('bGasto').onclick = () => hojaGasto();
+$('cal').onclick = e => { const d = e.target.closest('[data-f]'); if (d && !d.classList.contains('out') && d.dataset.f <= iso(hoy())) hojaDiario(d.dataset.f); };
+$('segTrat').onclick = e => {
+  const b = e.target.closest('[data-t]'); if (!b) return;
+  $('segTrat').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+  $('t-bitacora').classList.toggle('hidden', b.dataset.t !== 'bitacora');
+  $('t-gastos').classList.toggle('hidden', b.dataset.t !== 'gastos');
+};
 $('dPrev').onclick = () => { S.diaMed = iso(addD(parse(S.diaMed), -1)); renderMeds(); };
 $('dNext').onclick = () => { if (S.diaMed < iso(hoy())) { S.diaMed = iso(addD(parse(S.diaMed), 1)); renderMeds(); } };
 $('mPrev').onclick = () => { S.mes = new Date(S.mes.getFullYear(), S.mes.getMonth()-1, 1, 12); renderCal(); };
