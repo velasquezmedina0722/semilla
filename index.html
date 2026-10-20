@@ -125,6 +125,7 @@ textarea{min-height:80px;resize:vertical}
     <input type="password" id="lPass" required minlength="6" autocomplete="current-password">
     <button class="btn mt" id="lBtn" type="submit">Entrar</button>
     <button class="btn sec mt" id="lToggle" type="button">Crear cuenta</button>
+    <button class="ghost mt" id="lOlvido" type="button" style="display:block;margin:12px auto 0;font-size:15px;text-decoration:underline">¿Olvidaste tu contraseña?</button>
   </form>
   <div id="lMsg" class="msg hidden"></div>
 </section>
@@ -144,6 +145,7 @@ textarea{min-height:80px;resize:vertical}
       <div class="card hero" id="hero"></div>
       <div class="stats" id="stats"></div>
       <div class="alerts" id="alerts"></div>
+      <div class="alert lav mt hidden" id="avisos"></div>
       <div class="row mt">
         <button class="btn rose" id="bRegla">🩸 Llegó la regla</button>
       </div>
@@ -623,14 +625,80 @@ function traducir(m){
 }
 $('bSalir').onclick = async () => { if (confirm('¿Cerrar sesión?')) await sb.auth.signOut(); };
 
+// recuperar contraseña: se manda un enlace al correo y al volver se pide la nueva
+$('lOlvido').onclick = async () => {
+  const email = $('lEmail').value.trim();
+  if (!email) return msg('Escribe tu correo arriba y vuelve a tocar “¿Olvidaste tu contraseña?”.', true);
+  const {error} = await sb.auth.resetPasswordForEmail(email, {redirectTo: location.origin + location.pathname});
+  msg(error ? traducir(error.message) : 'Te enviamos un correo para cambiar la contraseña. Ábrelo desde este mismo teléfono (revisa también spam).', !!error);
+};
+function hojaNuevaClave(){
+  abrir(`<h3>Nueva contraseña</h3>
+    <label>Escribe tu nueva contraseña</label><input type="password" id="nClave" minlength="6" autocomplete="new-password">
+    <button class="btn mt" id="nOk">Guardar contraseña</button>`);
+  $('nOk').onclick = async () => {
+    const password = $('nClave').value;
+    if (password.length < 6) return toast('Mínimo 6 caracteres');
+    const {error} = await sb.auth.updateUser({password});
+    if (error) return toast('Error: ' + traducir(error.message));
+    cerrar(); toast('Contraseña cambiada');
+  };
+}
+
 function mostrar(session){
   S.user = session ? session.user : null;
   $('login').classList.toggle('hidden', !!S.user);
   $('app').classList.toggle('hidden', !S.user);
-  if (S.user) cargar();
+  if (S.user) { cargar(); estadoAvisos(); }
+}
+
+// ---------- notificaciones ----------
+const VAPID_PUBLIC = 'BMGSo9dtfqMdBw0djp0YUT55nVgYoWePh8WqX7FRkdWOg7U91fiKEd4ODMyN86X4l51OfTrOFtQsr4ud9i_OO0Y';
+const b64u = s => Uint8Array.from(atob((s + '='.repeat((4 - s.length % 4) % 4)).replace(/-/g,'+').replace(/_/g,'/')), c => c.charCodeAt(0));
+
+async function guardarSub(sub){
+  const j = sub.toJSON();
+  return sb.from('suscripciones').upsert({endpoint:j.endpoint, p256dh:j.keys.p256dh, auth:j.keys.auth}, {onConflict:'endpoint'});
+}
+
+async function estadoAvisos(){
+  const box = $('avisos');
+  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
+  const instalada = navigator.standalone || matchMedia('(display-mode: standalone)').matches;
+  if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)){
+    box.innerHTML = ios && !instalada
+      ? '<span class="i">🔔</span><div>Para recibir avisos en el iPhone, primero instala la app: <b>Compartir ⬆️ → Agregar a inicio</b>, y ábrela desde el ícono del bebé.</div>'
+      : '';
+    box.classList.toggle('hidden', !box.innerHTML);
+    return;
+  }
+  const reg = await navigator.serviceWorker.ready;
+  const sub = await reg.pushManager.getSubscription();
+  if (sub && Notification.permission === 'granted'){ box.classList.add('hidden'); guardarSub(sub); return; }
+  box.innerHTML = Notification.permission === 'denied'
+    ? '<span class="i">🔕</span><div>Los avisos están bloqueados en este teléfono. Actívalos en <b>Ajustes → Notificaciones</b> para esta app.</div>'
+    : '<span class="i">🔔</span><div style="flex:1">Recibe recordatorios de citas, días fértiles y medicinas en este teléfono.<button class="btn small mt" id="bAvisos" style="display:block">Activar avisos</button></div>';
+  box.classList.remove('hidden');
+  if ($('bAvisos')) $('bAvisos').onclick = activarAvisos;
+}
+
+async function activarAvisos(){
+  try {
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') return estadoAvisos();
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.subscribe({userVisibleOnly:true, applicationServerKey: b64u(VAPID_PUBLIC)});
+    const {error} = await guardarSub(sub);
+    if (error) return toast('Error: ' + error.message);
+    reg.showNotification('Semilla 👶🏽', {body:'¡Listo! Los avisos quedaron activados en este teléfono.', icon:'icon-192.png'});
+    estadoAvisos();
+  } catch (e) { toast('No se pudo activar: ' + e.message); }
 }
 sb.auth.getSession().then(({data}) => mostrar(data.session));
-sb.auth.onAuthStateChange((ev, session) => { if (ev === 'SIGNED_IN' || ev === 'SIGNED_OUT') mostrar(session); });
+sb.auth.onAuthStateChange((ev, session) => {
+  if (ev === 'SIGNED_IN' || ev === 'SIGNED_OUT') mostrar(session);
+  if (ev === 'PASSWORD_RECOVERY') { mostrar(session); setTimeout(hojaNuevaClave, 300); }
+});
 
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>

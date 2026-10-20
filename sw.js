@@ -1,5 +1,19 @@
 // Guarda la app para que abra rápido; los datos siempre vienen de Supabase.
-const CACHE = 'semilla-v1';
+const CACHE = 'semilla-v2';
+
+// Avisos que manda Supabase cada día
+self.addEventListener('push', e => {
+  const d = e.data ? e.data.json() : {};
+  e.waitUntil(self.registration.showNotification(d.title || 'Semilla', {
+    body: d.body || '', icon: 'icon-192.png', badge: 'icon-192.png', tag: d.tag || 'semilla', renotify: true
+  }));
+});
+
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  e.waitUntil(clients.matchAll({type: 'window', includeUncontrolled: true})
+    .then(cs => cs.length ? cs[0].focus() : clients.openWindow('./')));
+});
 const ARCHIVOS = ['./', 'index.html', 'manifest.json', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', e => {
