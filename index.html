@@ -123,6 +123,35 @@ textarea{min-height:80px;resize:vertical}
 .msg{margin-top:14px;font-size:14.5px;padding:11px 13px;border-radius:12px;background:var(--lav-soft);color:var(--lav-d);text-align:left}
 .msg.err{background:var(--rose-soft);color:#a33b4d}
 .toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:20px;font-size:14px;z-index:20}
+/* resumen para el doctor */
+#resumen{position:fixed;inset:0;background:#fff;z-index:30;overflow:auto}
+.rs-bar{position:sticky;top:0;background:#fff;border-bottom:1.5px solid var(--line);display:flex;gap:8px;align-items:center;padding:calc(10px + env(safe-area-inset-top)) 14px 10px}
+.rs{max-width:720px;margin:0 auto;padding:18px 18px 40px;font-size:14.5px;line-height:1.45}
+.rs h1{font-size:21px;margin-bottom:2px}
+.rs .meta{color:var(--muted);font-size:13px;margin-bottom:14px}
+.rs h2{font-size:15.5px;margin:20px 0 8px;padding-bottom:4px;border-bottom:2px solid var(--lav-soft);color:var(--lav-d)}
+.rs table{width:100%;border-collapse:collapse;font-size:13.5px}
+.rs th,.rs td{text-align:left;padding:6px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+.rs th{color:var(--muted);font-weight:700;font-size:12.5px}
+.rs ul{padding-left:18px}
+.rs li{margin:3px 0}
+.rs .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.rs .kpis div{background:var(--lav-soft);border-radius:12px;padding:10px}
+.rs .kpis small{display:block;color:var(--muted);font-size:12px}
+.rs .kpis b{font-size:16px}
+.rs .nota{color:var(--muted);font-size:12px;margin-top:22px}
+@media print{
+  body{padding:0;background:#fff}
+  #app,nav,.sheet,.rs-bar,.toast{display:none!important}
+  #resumen{position:static;overflow:visible}
+  .rs{padding:0;max-width:none}
+  .rs h2{break-after:avoid}
+  .rs tr{break-inside:avoid}
+  .noprint{display:none!important}
+}
+.rs .rango{display:flex;gap:10px;align-items:flex-end;background:var(--lav-soft);border-radius:14px;padding:10px 12px;margin-bottom:16px}
+.rs .rango label{margin:0 0 4px;font-size:12.5px}
+.rs .rango input{padding:9px;font-size:15px}
 </style>
 </head>
 <body>
@@ -173,6 +202,7 @@ textarea{min-height:80px;resize:vertical}
         <h2>Medicinas de hoy</h2>
         <div class="list" id="hoyMeds"></div>
       </div>
+      <button class="btn sec mt" onclick="abrirResumen()">📋 Resumen para el doctor</button>
       <h2>Próximo en el tratamiento</h2>
       <div class="list" id="proximos"></div>
     </section>
@@ -232,6 +262,7 @@ textarea{min-height:80px;resize:vertical}
 
     <!-- PREGUNTAS -->
     <section id="v-preguntas" class="hidden">
+      <button class="btn sec" style="margin-bottom:12px" onclick="abrirResumen()">📋 Resumen para el doctor</button>
       <form id="fPreg" class="row">
         <input id="pTexto" placeholder="Nueva pregunta para el médico…" required>
         <button class="btn small" style="flex:none">Agregar</button>
@@ -253,6 +284,17 @@ textarea{min-height:80px;resize:vertical}
 </div>
 
 <div id="sheet" class="sheet hidden"><div class="box" id="sheetBox"></div></div>
+
+<!-- RESUMEN PARA EL DOCTOR -->
+<div id="resumen" class="hidden">
+  <div class="rs-bar">
+    <button class="ghost" onclick="cerrarResumen()">‹ Volver</button>
+    <span style="flex:1"></span>
+    <button class="btn small sec" onclick="compartirResumen()">Compartir</button>
+    <button class="btn small" onclick="window.print()">PDF / Imprimir</button>
+  </div>
+  <div class="rs" id="rsBody"></div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
 <script>
@@ -395,6 +437,130 @@ function versoDelDia(){
   const t = hoy(), n = diff(t, new Date(t.getFullYear(), 0, 1, 12));
   return VERSOS[(n + t.getFullYear()) % VERSOS.length];
 }
+
+// ---------- resumen para el doctor ----------
+const RS = {desde:null, hasta:null, tomas:[]};
+window.abrirResumen = async () => {
+  const fechas = [...S.ciclos.map(c => c.inicio), ...S.eventos.map(e => e.fecha), ...(S.diario || []).map(d => d.fecha)].filter(Boolean).sort();
+  RS.desde = RS.desde || fechas[0] || iso(addD(hoy(), -90));
+  RS.hasta = RS.hasta || iso(hoy());
+  $('resumen').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+  $('rsBody').innerHTML = '<div class="empty">Preparando el resumen…</div>';
+  await pintarResumen();
+};
+window.cerrarResumen = () => { $('resumen').classList.add('hidden'); document.body.style.overflow = ''; };
+
+async function pintarResumen(){
+  const {data} = await sb.from('tomas').select('*').gte('fecha', RS.desde).lte('fecha', RS.hasta);
+  RS.tomas = data || [];
+  $('rsBody').innerHTML = `
+    <div class="rango noprint">
+      <div style="flex:1"><label>Desde</label><input type="date" id="rsDesde" value="${RS.desde}" max="${RS.hasta}"></div>
+      <div style="flex:1"><label>Hasta</label><input type="date" id="rsHasta" value="${RS.hasta}" min="${RS.desde}" max="${iso(hoy())}"></div>
+    </div>
+    <div id="rsDoc">${htmlResumen()}</div>`;
+  $('rsDesde').onchange = e => { if (e.target.value){ RS.desde = e.target.value; pintarResumen(); } };
+  $('rsHasta').onchange = e => { if (e.target.value){ RS.hasta = e.target.value; pintarResumen(); } };
+}
+
+function htmlResumen(){
+  const D = RS.desde, H = RS.hasta, enRango = f => f >= D && f <= H;
+  const corta = f => fmt(f, {day:'numeric', month:'short', year:'numeric'});
+  const k = calc(), med = (S.medicos || [])[0];
+  const ciclos = [...S.ciclos].sort((a, b) => a.inicio < b.inicio ? -1 : 1);
+  // días de regla (para distinguir sangrado fuera de la regla)
+  const regla = new Set();
+  ciclos.forEach(c => { const i = parse(c.inicio), f = c.fin ? parse(c.fin) : addD(i, DURACION_DEFECTO - 1); for (let d = i; d <= f; d = addD(d, 1)) regla.add(iso(d)); });
+
+  // 1) ciclos
+  const filasC = ciclos.map((c, i) => ({c, sig: ciclos[i + 1]})).filter(x => enRango(x.c.inicio)).map(({c, sig}) => {
+    const dur = c.fin ? diff(parse(c.fin), parse(c.inicio)) + 1 : null;
+    const largo = sig ? diff(parse(sig.inicio), parse(c.inicio)) : null;
+    return `<tr><td>${corta(c.inicio)}</td><td>${dur ? dur + ' días' : '—'}</td><td>${largo ? largo + ' días' : 'en curso'}</td><td>${esc(c.notas || '')}</td></tr>`;
+  }).join('');
+
+  // 2) registro diario
+  const dia = (S.diario || []).filter(d => enRango(d.fecha)).sort((a, b) => a.fecha < b.fecha ? -1 : 1);
+  const lista = (L, f) => L.length ? L.map(f).join(', ') : '—';
+  const pos = dia.filter(d => (d.ovulacion || '').toLowerCase() === 'positiva');
+  const neg = dia.filter(d => (d.ovulacion || '').toLowerCase() === 'negativa');
+  const rel = dia.filter(d => d.relaciones);
+  const dolor = dia.filter(d => d.dolor && d.dolor !== 'Leve');
+  const sangra = dia.filter(d => d.sangrado && !regla.has(d.fecha));
+  const temps = dia.filter(d => d.temperatura);
+  const notasD = dia.filter(d => d.notas);
+  const relFertil = k ? rel.filter(d => parse(d.fecha) >= k.fIni && parse(d.fecha) <= k.fFin).length : 0;
+
+  // 3) consultas y procedimientos
+  const ev = S.eventos.filter(e => enRango(e.fecha)).sort((a, b) => a.fecha < b.fecha ? -1 : 1);
+  const filasE = ev.map(e => {
+    const t = TIPOS[e.tipo] || TIPOS.otro;
+    const det = (e.detalle || '').split('·').slice(0, 2).map(s => s.trim()).filter(Boolean).join(' · ');
+    const arch = (S.archivos || []).filter(a => a.evento_id === e.id).map(a => esc(a.nombre));
+    return `<tr><td style="white-space:nowrap">${corta(e.fecha)}</td><td>${t.n}${det ? '<br><span style="color:var(--muted)">' + esc(det) + '</span>' : ''}</td>
+      <td>${esc(e.resultado || '')}${arch.length ? '<br><span style="color:var(--muted)">📎 ' + arch.join(', ') + '</span>' : ''}</td></tr>`;
+  }).join('');
+
+  // 4) medicamentos con cumplimiento dentro del rango
+  const meds = (S.meds || []).filter(m => m.inicio <= H && (!m.fin || m.fin >= D));
+  const filasM = meds.map(m => {
+    const ini = m.inicio > D ? m.inicio : D, finR = [H, iso(hoy()), m.fin || '9999'].sort()[0];
+    const dias = Math.max(0, diff(parse(finR), parse(ini)) + 1), esperadas = dias * nDosis(m);
+    const hechas = RS.tomas.filter(t => t.medicamento_id === m.id && t.fecha >= ini && t.fecha <= finR).length;
+    const pct = esperadas ? Math.round(Math.min(hechas, esperadas) / esperadas * 100) + '%' : '—';
+    return `<tr><td><b>${esc(m.nombre)}</b>${m.dosis ? ' · ' + esc(m.dosis) : ''}<br><span style="color:var(--muted)">${esc(m.para)} · ${horas(m).length ? esc(horas(m).join(', ')) : '1 vez al día'}</span></td>
+      <td>${corta(m.inicio)}${m.fin ? ' – ' + corta(m.fin) : ''}${m.activo ? '' : ' (suspendido)'}</td><td>${pct}<br><span style="color:var(--muted)">${hechas} de ${esperadas} dosis</span></td></tr>`;
+  }).join('');
+
+  const pend = S.preguntas.filter(p => !p.respondida);
+  const resp = S.preguntas.filter(p => p.respondida && p.respuesta);
+
+  return `
+    <h1>Resumen para la consulta</h1>
+    <div class="meta">${med ? esc(med.nombre) + ' · ' : ''}Período: ${corta(D)} al ${corta(H)} · Preparado el ${corta(iso(hoy()))}</div>
+
+    ${k ? `<div class="kpis">
+      <div><small>Ciclo promedio</small><b>${k.prom} días</b><small>${k.largos.length ? 'según ' + k.largos.length + ' ciclo' + (k.largos.length > 1 ? 's' : '') : 'valor inicial'}</small></div>
+      <div><small>Día del ciclo hoy</small><b>${k.dia}</b><small>regla del ${corta(iso(k.ult))}</small></div>
+      <div><small>Próxima regla</small><b>${fmt(k.prox, {day:'numeric', month:'short'})}</b><small>${diff(k.prox, hoy()) < 0 ? 'retraso de ' + -diff(k.prox, hoy()) + ' días' : 'estimada'}</small></div>
+    </div>` : ''}
+
+    <h2>🩸 Ciclos menstruales</h2>
+    ${filasC ? `<table><tr><th>Inicio</th><th>Días de regla</th><th>Duración del ciclo</th><th>Notas</th></tr>${filasC}</table>` : '<p>No hay reglas registradas en este período.</p>'}
+
+    <h2>🧪 Ovulación y registro diario</h2>
+    <ul>
+      <li><b>Pruebas de ovulación positivas:</b> ${lista(pos, d => corta(d.fecha))}${neg.length ? ` <span style="color:var(--muted)">(${neg.length} negativa${neg.length > 1 ? 's' : ''})</span>` : ''}</li>
+      <li><b>Relaciones registradas:</b> ${rel.length}${rel.length ? ' — ' + lista(rel, d => fmt(d.fecha, {day:'numeric', month:'short'})) : ''}${k && rel.length ? ` · en los días fértiles del ciclo actual: ${relFertil}` : ''}</li>
+      ${dolor.length ? `<li><b>Dolor moderado o fuerte:</b> ${lista(dolor, d => fmt(d.fecha, {day:'numeric', month:'short'}) + ' (' + d.dolor.toLowerCase() + ')')}</li>` : ''}
+      ${sangra.length ? `<li><b>Sangrado fuera de la regla:</b> ${lista(sangra, d => fmt(d.fecha, {day:'numeric', month:'short'}) + ' (' + d.sangrado.toLowerCase() + ')')}</li>` : ''}
+      ${temps.length ? `<li><b>Temperatura al despertar:</b> ${lista(temps, d => fmt(d.fecha, {day:'numeric', month:'short'}) + ' ' + d.temperatura + ' °C')}</li>` : ''}
+      ${notasD.length ? `<li><b>Notas:</b><ul>${notasD.map(d => `<li>${fmt(d.fecha, {day:'numeric', month:'short'})}: ${esc(d.notas)}</li>`).join('')}</ul></li>` : ''}
+    </ul>
+    ${k ? `<p style="color:var(--muted);font-size:13px">Días fértiles del ciclo actual: ${fmt(k.fIni, {day:'numeric', month:'short'})} – ${fmt(k.fFin, {day:'numeric', month:'short'})} (${k.lh ? 'según prueba de ovulación' : 'estimado por calendario'}).</p>` : ''}
+
+    <h2>🩺 Consultas, exámenes y procedimientos</h2>
+    ${filasE ? `<table><tr><th>Fecha</th><th>Qué</th><th>Resultado / indicaciones</th></tr>${filasE}</table>` : '<p>No hay registros en este período.</p>'}
+
+    <h2>💊 Medicamentos</h2>
+    ${filasM ? `<table><tr><th>Medicamento</th><th>Período</th><th>Cumplimiento</th></tr>${filasM}</table>` : '<p>No hay medicamentos en este período.</p>'}
+
+    <h2>❓ Preguntas para el doctor</h2>
+    ${pend.length ? `<ol style="padding-left:20px">${pend.map(p => `<li>${esc(p.texto)}</li>`).join('')}</ol>` : '<p>No hay preguntas pendientes.</p>'}
+    ${resp.length ? `<p style="margin-top:8px"><b>Respondidas antes:</b></p><ul>${resp.map(p => `<li>${esc(p.texto)} — <i>${esc(p.respuesta)}</i></li>`).join('')}</ul>` : ''}
+
+    <p class="nota">Resumen generado con la app Semilla a partir de lo que registramos. Los días fértiles son estimados; el cumplimiento de medicamentos se calcula con las dosis marcadas en la app.</p>`;
+}
+
+window.compartirResumen = async () => {
+  const doc = $('rsDoc'); if (!doc) return;
+  const texto = doc.innerText.replace(/\n{3,}/g, '\n\n');
+  try {
+    if (navigator.share) await navigator.share({title: 'Resumen para la consulta', text: texto});
+    else { await navigator.clipboard.writeText(texto); toast('Resumen copiado'); }
+  } catch (e) { if (e.name !== 'AbortError') toast('No se pudo compartir'); }
+};
 
 // ---------- registro diario ----------
 const OPC = {
